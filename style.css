@@ -253,6 +253,27 @@ td.num { font-family: var(--mono); }
   padding: 0 2px;
 }
 
+.badge.stale-tag {
+  color: var(--fail);
+  background: var(--fail-bg);
+  margin-right: 6px;
+}
+
+.retry-row { margin-top: 12px; }
+
+.retry-btn {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--card-bg);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.retry-btn:hover { opacity: 0.9; }
+
 .screen-value {
   white-space: normal;
   font-family: inherit;

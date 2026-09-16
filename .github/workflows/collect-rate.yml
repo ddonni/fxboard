@@ -14,10 +14,10 @@ on:
         options:
           - none
           - timeout
-          - http_4xx
-          - http_5xx
-          - malformed
-          - empty
+          - auth
+          - rate_limit
+          - offline
+          - schema_error
 
 permissions:
   contents: write

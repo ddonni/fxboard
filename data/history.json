@@ -1,1 +1,13 @@
-{"pair":"JPY/KRW","unit":"KRW / 100 JPY (100엔당 원)","source":"https://open.er-api.com/v6/latest/JPY","source_name":"ExchangeRate-API (open.er-api.com)","reference_timezone":"Asia/Seoul (KST, UTC+9)","records":[]}
+{
+  "schema_version": "aleph-t04-evaluation-state-v1",
+  "signal_id": "jpy-krw-100",
+  "unit": "KRW/100JPY",
+  "unit_label_ko": "KRW / 100 JPY (100엔당 원)",
+  "source_name": "ExchangeRate-API (open.er-api.com)",
+  "source_url": "https://open.er-api.com/v6/latest/JPY",
+  "reference_timezone": "Asia/Seoul (KST, UTC+9)",
+  "daily_readings": [],
+  "status": null,
+  "last_delta": null,
+  "last_run": null
+}
