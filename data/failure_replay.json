@@ -1,0 +1,61 @@
+{
+  "note": "이 파일은 실제 장애가 아니라, 파이프라인이 5가지 외부 실패 유형을 정직하게 처리하는지 검증하기 위해 의도적으로 재생(synthetic replay)한 기록입니다. 모든 값은 합성 시험값이며, 실제 일별 환율 기록(history.json)과는 분리되어 있습니다.",
+  "replays": {
+    "timeout": {
+      "failure_type": "timeout",
+      "label_ko": "타임아웃",
+      "replayed_at": "2026-09-16T14:32:57.017883+09:00",
+      "resulting_status": "failed",
+      "resulting_reason": "timeout",
+      "http_status": null,
+      "detail": "[simulated] request timed out after 8s",
+      "last_known_good_used": null,
+      "user_facing_message": "오늘자 데이터를 가져오지 못했습니다 (데이터 소스 응답 시간 초과). 보존된 이전 정상값이 아직 없습니다."
+    },
+    "http_4xx": {
+      "failure_type": "http_4xx",
+      "label_ko": "4xx 클라이언트 오류",
+      "replayed_at": "2026-09-16T14:32:57.077647+09:00",
+      "resulting_status": "failed",
+      "resulting_reason": "http_4xx",
+      "http_status": 404,
+      "detail": "[simulated] HTTP 404 Not Found",
+      "last_known_good_used": null,
+      "user_facing_message": "오늘자 데이터를 가져오지 못했습니다 (데이터 소스가 요청을 거부함). 보존된 이전 정상값이 아직 없습니다."
+    },
+    "http_5xx": {
+      "failure_type": "http_5xx",
+      "label_ko": "5xx 서버 오류",
+      "replayed_at": "2026-09-16T14:32:57.137254+09:00",
+      "resulting_status": "failed",
+      "resulting_reason": "http_5xx",
+      "http_status": 503,
+      "detail": "[simulated] HTTP 503 Service Unavailable",
+      "last_known_good_used": null,
+      "user_facing_message": "오늘자 데이터를 가져오지 못했습니다 (데이터 소스 서버 오류). 보존된 이전 정상값이 아직 없습니다."
+    },
+    "malformed": {
+      "failure_type": "malformed",
+      "label_ko": "응답 형식 오류(파싱 실패)",
+      "replayed_at": "2026-09-16T14:32:57.196910+09:00",
+      "resulting_status": "failed",
+      "resulting_reason": "malformed_response",
+      "http_status": null,
+      "detail": "JSON decode failed: Unterminated string starting at: line 1 column 62 (char 61)",
+      "last_known_good_used": null,
+      "user_facing_message": "오늘자 데이터를 가져오지 못했습니다 (응답 형식이 손상되어 해석 불가). 보존된 이전 정상값이 아직 없습니다."
+    },
+    "empty": {
+      "failure_type": "empty",
+      "label_ko": "빈 응답/데이터 누락",
+      "replayed_at": "2026-09-16T14:32:57.254792+09:00",
+      "resulting_status": "failed",
+      "resulting_reason": "empty_data",
+      "http_status": null,
+      "detail": "API가 result=success를 반환하지 않음 (result='error', error-type='unsupported-code')",
+      "last_known_good_used": null,
+      "user_facing_message": "오늘자 데이터를 가져오지 못했습니다 (응답에 값이 비어 있음). 보존된 이전 정상값이 아직 없습니다."
+    }
+  },
+  "updated_at": "2026-09-16T14:32:57.254792+09:00"
+}

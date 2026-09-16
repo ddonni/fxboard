@@ -1,0 +1,9 @@
+# 비밀값/로컬 설정이 실수로 커밋되는 걸 막기 위한 방어적 설정 (카드 2, T04-C11)
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+__pycache__/
+*.pyc
+.DS_Store
