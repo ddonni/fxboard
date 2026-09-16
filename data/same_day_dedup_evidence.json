@@ -1,0 +1,64 @@
+{
+  "note": "이 파일은 실제 수집 기록이 아니라, collect_rate.py의 실제 저장 함수(apply_successful_reading)를 합성 시계(synthetic clock)로 시험한 결과입니다. data/history.json과는 분리되어 있고, 실제 네트워크도 타지 않습니다 (T04-C20, T04-C21 검증용, 카드 4).",
+  "criteria": {
+    "T04-C20": "기준 시간대(Asia/Seoul)의 같은 날짜에 여러 번 성공해도 일별 기록은 한 건이다.",
+    "T04-C21": "기준 시간대의 다음 날짜에 성공하면 새 일별 기록이 생긴다."
+  },
+  "steps": [
+    {
+      "moment": "A (같은 날 1번째)",
+      "fetched_at": "2026-09-16T00:10:00+09:00",
+      "record_date": "2026-09-16",
+      "raw_rate_krw": 8.6,
+      "row_count_before": 0,
+      "row_count_after": 1,
+      "record_ids_after": [
+        "jpy-krw-100-2026-09-16"
+      ],
+      "stored_value_for_date": 860.0,
+      "record_id_for_date": "jpy-krw-100-2026-09-16"
+    },
+    {
+      "moment": "B (같은 날 2번째, 재실행)",
+      "fetched_at": "2026-09-16T09:00:00+09:00",
+      "record_date": "2026-09-16",
+      "raw_rate_krw": 8.65,
+      "row_count_before": 1,
+      "row_count_after": 1,
+      "record_ids_after": [
+        "jpy-krw-100-2026-09-16"
+      ],
+      "stored_value_for_date": 865.0,
+      "record_id_for_date": "jpy-krw-100-2026-09-16"
+    },
+    {
+      "moment": "C (같은 날 3번째, 재실행)",
+      "fetched_at": "2026-09-16T23:55:00+09:00",
+      "record_date": "2026-09-16",
+      "raw_rate_krw": 8.7,
+      "row_count_before": 1,
+      "row_count_after": 1,
+      "record_ids_after": [
+        "jpy-krw-100-2026-09-16"
+      ],
+      "stored_value_for_date": 870.0,
+      "record_id_for_date": "jpy-krw-100-2026-09-16"
+    },
+    {
+      "moment": "D (다음 날 1번째)",
+      "fetched_at": "2026-09-17T00:15:00+09:00",
+      "record_date": "2026-09-17",
+      "raw_rate_krw": 8.75,
+      "row_count_before": 1,
+      "row_count_after": 2,
+      "record_ids_after": [
+        "jpy-krw-100-2026-09-16",
+        "jpy-krw-100-2026-09-17"
+      ],
+      "stored_value_for_date": 875.0,
+      "record_id_for_date": "jpy-krw-100-2026-09-17"
+    }
+  ],
+  "result": "PASS",
+  "verified_at": "2026-09-16T16:31:39.878120+09:00"
+}

@@ -29,7 +29,7 @@
 
     <section class="card">
       <h2>일별 기록 (정상 수신만)</h2>
-      <p class="note">자동 수집은 매일 00:10(KST)에 GitHub Actions로 실행됩니다. 같은 날 재수신되면 그 날짜의 값을 덮어씁니다(중복 생성 아님). 이 표에는 <strong>성공한 날짜만</strong> 쌓입니다 — 실패는 이 표를 건드리지 않고 위 카드의 상태(fresh/stale)로만 표시됩니다(T04-C17: 실패가 마지막 정상값을 지우지 않음).</p>
+      <p class="note">자동 수집은 매일 00:10(KST)에 GitHub Actions로 실행됩니다. 같은 날(기준 시간대 기준) 재수신되면 그 날짜의 값을 덮어쓸 뿐 새 행을 만들지 않고(T04-C20), 다음 날짜에 성공하면 새 행이 생깁니다(T04-C21). 이 표에는 <strong>성공한 날짜만</strong> 쌓입니다 — 실패는 이 표를 건드리지 않고 위 카드의 상태(fresh/stale)로만 표시됩니다(T04-C17: 실패가 마지막 정상값을 지우지 않음).</p>
       <div class="table-wrap">
         <table id="history-table">
           <thead>

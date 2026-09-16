@@ -1,0 +1,25 @@
+name: Same-day dedup test
+
+# 카드 4 (T04-C20, T04-C21): push마다 합성 시계로 "같은 날 재실행은 한 건으로 합치고,
+# 다음 날짜는 새 건으로 저장한다"는 규칙을 검증한다. scripts/test_same_day_dedup.py는
+# 실제 네트워크나 data/history.json을 건드리지 않고, collect_rate.py가 실제로 쓰는
+# 저장 함수(apply_successful_reading)만 그대로 불러와 시험한다.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  dedup-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run same-day dedup test
+        run: python3 scripts/test_same_day_dedup.py

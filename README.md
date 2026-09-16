@@ -3,8 +3,8 @@
 실제로 매일 바뀌는 값(엔화→원 환율, 100엔당 원화)을 매일 자동으로 기록하고, 어제와 비교하며,
 데이터가 오지 않을 때도 마지막 정상값을 지키며 정직하게 설명하는 무로그인 공개 정보판입니다.
 
-카드 1(매일 궁금한 값 하나), 카드 2(비밀 없는 호출), 카드 3(다섯 가지 실패)까지 반영되어
-있습니다. 카드 3부터 데이터 모델이 ALEPH 공개 fixture 계약
+카드 1(매일 궁금한 값 하나), 카드 2(비밀 없는 호출), 카드 3(다섯 가지 실패), 카드 4(하루
+한 줄)까지 반영되어 있습니다. 카드 3부터 데이터 모델이 ALEPH 공개 fixture 계약
 (`aleph-t04-real-information-board-public-contract-v2`)과 같은 모양으로 바뀌었습니다 —
 자세한 내용은 아래 "카드 3" 절 참고.
 
@@ -164,6 +164,73 @@ GitHub 토큰을 브라우저에 넣어야 해서 카드 2 원칙에 어긋납�
 | T04-C18 (오래된 값 표시) | 상단 카드 "오래됨(stale)" 배지 |
 | T04-C19 (재시도 행동 + 복구) | 상단 카드 "↻ 다시 시도" 버튼 + replay_fixtures.js 복구 시퀀스 PASS |
 
+## 카드 4 통과 기준 — 하루 한 줄 (T04-C20, T04-C21)
+
+**① 일별 고유키와 갱신 규칙**
+
+`scripts/collect_rate.py`의 `record_id_for(reading)`가 그 키입니다:
+
+```python
+def record_id_for(reading):
+    return f"{reading['signal_id']}-{reading['record_date']}"
+```
+
+`record_date`는 `fetched_at`(조회 시각)을 기준 시간대(Asia/Seoul)로 환산한 날짜입니다
+(`kst_date_of()`). `apply_successful_reading()`은 저장 직전에 같은 `signal_id` +
+`record_date`를 가진 행이 이미 있는지 찾고,
+
+- 있으면 → 그 행을 최신 값으로 **덮어씀** (같은 `record_id` 유지, `first_fetched_at`은
+  그대로 두고 `last_fetched_at`만 갱신) → 행 수 그대로 (T04-C20)
+- 없으면 → 새 행을 **추가** → 행 수 +1 (T04-C21)
+
+이건 새로 만든 로직이 아니라, 카드 3에서 이미 짜뒀던 함수입니다 — 공식 fixture 시퀀스
+자체가 "D1-A(같은 날 1번째) → D1-B(같은 날 2번째, 값만 다름) → D2(다음 날)"로 구성되어
+있어서, `replay_fixtures.js`가 이미 이 규칙을 전제로 9개 fixture를 채점하고 있었습니다.
+카드 4는 그 규칙을 **라이브 수집기(Python) 쪽에서 직접, 합성 시계로 다시 한번** 검증한
+카드입니다.
+
+**② 합성 시계 시험 — `scripts/test_same_day_dedup.py`**
+
+실제 네트워크나 `data/history.json`을 건드리지 않고, `collect_rate.py`가 실제로 쓰는
+`parse_to_reading` / `apply_successful_reading` 함수를 그대로 불러와, 아래 4개 가상
+조회 시각(합성 시계)을 순서대로 먹입니다:
+
+| 순서 | 조회 시각(KST) | 날짜(KST) | 원문 rates.KRW |
+|---|---|---|---|
+| A | 2026-09-16 00:10 | 2026-09-16 | 8.60 |
+| B (재실행) | 2026-09-16 09:00 | 2026-09-16 | 8.65 |
+| C (재실행) | 2026-09-16 23:55 | 2026-09-16 | 8.70 |
+| D | 2026-09-17 00:15 | 2026-09-17 | 8.75 |
+
+실행 결과(같은 날 재실행 전후 행 수, "남길 것" 항목):
+
+```
+[A (같은 날 1번째)] fetched_at=2026-09-16T00:10:00+09:00 record_date=2026-09-16 행수 0 -> 1 (저장값 860.0)
+[B (같은 날 2번째, 재실행)] fetched_at=2026-09-16T09:00:00+09:00 record_date=2026-09-16 행수 1 -> 1 (저장값 865.0)
+[C (같은 날 3번째, 재실행)] fetched_at=2026-09-16T23:55:00+09:00 record_date=2026-09-16 행수 1 -> 1 (저장값 870.0)
+[D (다음 날 1번째)] fetched_at=2026-09-17T00:15:00+09:00 record_date=2026-09-17 행수 1 -> 2 (저장값 875.0)
+
+=== 결과: PASS ===
+같은 날짜(2026-09-16) 3번 성공 → 행 수: 1 -> 1 -> 1 (변화 없음, T04-C20)
+다음 날짜(2026-09-17) 성공 → 행 수: 1 -> 2 (+1, T04-C21)
+증거 저장: data/same_day_dedup_evidence.json
+```
+
+같은 날 3번 재실행하는 동안 행 수는 계속 1로 유지되면서도 저장값은 매번 최신화됨(860 →
+865 → 870, 그냥 무시된 게 아니라 실제로 덮어써졌다는 증거)을 확인했고, 다음 날짜 1번
+성공에서만 행이 2건으로 늘었습니다. `record_id`도 A/B/C는 동일, D는 다르다는 것까지
+스크립트 내부 assert로 확인합니다 — 하나라도 어긋나면 exit code 1로 실패합니다.
+
+`.github/workflows/dedup-test.yml`이 push마다 이 스크립트를 실행해서, 앞으로 코드가
+바뀌어도 이 규칙이 계속 지켜지는지 자동으로 감시합니다.
+
+**③ 통과 기준 매핑**
+
+| 기준 | 확인 위치 |
+|---|---|
+| T04-C20 (같은 날 여러 번 성공 → 1건) | `test_same_day_dedup.py` 단계 A/B/C, `dedup-test.yml` PASS |
+| T04-C21 (다음 날 성공 → 새 1건) | `test_same_day_dedup.py` 단계 D, `dedup-test.yml` PASS |
+
 ## 왜 이런 구조인가 — 기술 스택 설명
 
 ### 1. 프론트엔드: 순수 HTML/CSS/JS (프레임워크 없음)
@@ -216,15 +283,18 @@ fx-board/
 ├── adapter/
 │   └── reading-store.js     # 재생용 상태기계 — ALEPH 공식 참조 구현 기반 (카드 3)
 ├── data/
-│   ├── history.json         # 일별 실제 수집 기록 (성공만 누적, 지금은 빈 상태)
-│   └── failure_replay.json  # 5종 실패 합성 재생 기록 (자동 생성, 로컬에서 1회 미리 생성해둠)
+│   ├── history.json                  # 일별 실제 수집 기록 (성공만 누적, 지금은 빈 상태)
+│   ├── failure_replay.json           # 5종 실패 합성 재생 기록 (자동 생성)
+│   └── same_day_dedup_evidence.json  # 하루 한 줄 합성 시계 시험 증거 (카드 4)
 ├── scripts/
-│   ├── collect_rate.py      # 수집기 (실제 실행 / --simulate 5종 실패 재생, 카드 3 상태모델)
-│   ├── check_secrets.py     # 비밀값 검색기 (작업 트리 + git 기록, 카드 2)
-│   └── replay_fixtures.js   # 공식 fixture 9개 재생 채점기 (카드 3, Node 내장 기능만 사용)
+│   ├── collect_rate.py          # 수집기 (실제 실행 / --simulate 5종 실패 재생, 카드 3 상태모델)
+│   ├── check_secrets.py         # 비밀값 검색기 (작업 트리 + git 기록, 카드 2)
+│   ├── replay_fixtures.js       # 공식 fixture 9개 재생 채점기 (카드 3, Node 내장 기능만 사용)
+│   └── test_same_day_dedup.py   # 같은 날 재실행/다음 날 신규행 합성 시계 시험 (카드 4)
 └── .github/workflows/
     ├── collect-rate.yml     # 매일 자동 수집 + 수동 5종 실패 재생 워크플로
-    └── secret-scan.yml      # push마다 비밀값 스캔 (카드 2)
+    ├── secret-scan.yml      # push마다 비밀값 스캔 (카드 2)
+    └── dedup-test.yml       # push마다 하루 한 줄 규칙 시험 (카드 4)
 ```
 
 ## 배포 방법 (직접 진행)
@@ -262,29 +332,34 @@ git push -u origin main
 
 ## 확인 방법 (제출용, 4줄)
 
-- **위치**: 배포된 사이트 상단 카드("100엔 = OOO원" / "오늘 수집 실패" 카드), "실패 시나리오
-  합성 재생 기록" 섹션, 저장소의 `scripts/check_secrets.py`와 `node scripts/replay_fixtures.js`
-  실행 결과
+- **위치**: 배포된 사이트 상단 카드와 "일별 기록" 표, 저장소의 `scripts/check_secrets.py`,
+  `node scripts/replay_fixtures.js`, `python3 scripts/test_same_day_dedup.py` 실행 결과
 - **행동(3단계 이내)**: ① 사이트 접속해서 값·단위·출처·두 시각·기준 시간대(정상 시) 또는
   실패 사유·마지막 정상값(오래됨 표시)·다시 시도 버튼(실패 시)을 확인 → ② Actions에서
-  `failure_type`을 하나 골라 수동 실행해 재생 기록 섹션에 한 건이 추가되는지, 일별 기록 표는
-  그대로인지(행 안 늘어남) 확인 → ③ 로컬에서 `python3 scripts/check_secrets.py`와
-  `node scripts/replay_fixtures.js --fixtures-dir <공식 fixture 폴더>` 실행
+  워크플로들을 각각 한 번씩 수동 실행해 재생 기록/일별 기록이 규칙대로만 바뀌는지 확인
+  (같은 날 재실행은 표 행이 늘지 않고, 실패는 표를 안 건드림) → ③ 로컬에서
+  `python3 scripts/check_secrets.py`, `node scripts/replay_fixtures.js --fixtures-dir <공식
+  fixture 폴더>`, `python3 scripts/test_same_day_dedup.py` 3개를 실행
 - **통과 모습**: 정상일 땐 값/단위/출처/시각/기준시간대가 모두 보이고, 실패일 땐 5종 중 정확한
   사유와 "오래됨(stale)" 배지가 붙은 마지막 정상값·다시 시도 버튼이 함께 보이며, 일별 기록
-  표는 실패로 줄지 않음. 두 스크립트 모두 정상 종료(비밀값 0건 / fixture 전부 PASS)
+  표는 실패로 줄지 않고 같은 날 재수신으로도 늘지 않음. 세 스크립트 모두 정상 종료(비밀값
+  0건 / fixture 전부 PASS / 하루-한-줄 PASS)
 - **안 될 때 모습**: 정상 기록이 없으면 "기록 없음"으로 정직하게 안내되고(빈 화면·오류 아님),
-  `check_secrets.py`가 뭔가 찾으면 파일명·줄 번호와 exit code 1로 실패하며, `replay_fixtures.js`가
-  기대값과 다르면 어느 fixture·어느 필드가 다른지 diff로 출력하고 exit code 1로 실패함
+  `check_secrets.py`가 뭔가 찾거나 `replay_fixtures.js`가 기대값과 다르거나
+  `test_same_day_dedup.py`의 assert가 실패하면(같은 날인데 행이 늘거나, 다음 날인데 행이
+  안 늘거나) 각각 원인을 출력하고 exit code 1로 실패함
 
 ## AI와 나의 판단 (제출용, 3줄 — 실제 진행에 맞춰 다듬어서 제출하세요)
 
-- **AI에게 맡긴 일**: 전체 코드 작성(수집 스크립트의 5종 실패 분류·상태기계, GitHub Actions
-  워크플로, 프론트엔드, 비밀값 스캐너), ALEPH 공식 fixture 패키지의 SHA-256 무결성 검증,
-  공식 상태 모델과 동일하게 동작하는 JS 재생 어댑터(`adapter/reading-store.js`) 작성과 9개
-  fixture 전량 재생 검증(`replay_fixtures.js`, 전부 PASS), "마지막 정상값이 실패로 지워지지
-  않는다"는 요구를 만족하는 저장 로직 설계
+- **AI에게 맡긴 일**: 전체 코드 작성(수집 스크립트의 5종 실패 분류·상태기계·일별 고유키
+  갱신 규칙, GitHub Actions 워크플로, 프론트엔드, 비밀값 스캐너), ALEPH 공식 fixture
+  패키지의 SHA-256 무결성 검증, 공식 상태 모델과 동일하게 동작하는 JS 재생 어댑터
+  (`adapter/reading-store.js`) 작성과 9개 fixture 전량 재생 검증(`replay_fixtures.js`,
+  전부 PASS), "마지막 정상값이 실패로 지워지지 않는다"는 요구를 만족하는 저장 로직 설계,
+  합성 시계로 같은 날 재실행 3회·다음 날 1회를 시험하는 `test_same_day_dedup.py` 작성과
+  검증(PASS)
 - **직접 판단한 일**: 추적할 값으로 엔화/원(JPY/KRW)을 선택, 카드 단위로 순서대로 진행하기로
-  결정, GitHub 업로드·Vercel 배포·Actions 권한 설정과 5종 실패 재생 수동 실행을 직접 수행
+  결정, GitHub 업로드·Vercel 배포·Actions 권한 설정과 5종 실패 재생·하루-한-줄 시험 수동
+  실행을 직접 수행
 - **AI 제안을 따르지 않은 일**: (실제로 진행하면서 다르게 판단한 부분이 있으면 여기에
   적으세요. 없으면 "특별히 없음 — 제안된 구조를 그대로 채택함"이라고 적으면 됩니다.)
