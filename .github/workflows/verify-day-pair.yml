@@ -1,0 +1,39 @@
+name: Verify two real-day pair
+
+# 카드 5 (T04-C22~C24): 자동 수집(collect-rate.yml)이 매일 실행되면서 서로 다른 실제
+# KST 날짜의 정상 기록이 쌓입니다. 이 워크플로는 push마다 자동 실행되지 않습니다 —
+# 아직 실제 기록이 2건 미만일 때 계속 실패로 표시되는 걸 피하기 위해, 실제로 이틀치
+# 데이터가 쌓인 뒤 사람이 직접 "Run workflow"로 실행합니다.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify real two-day pair and recompute delta
+        run: python3 scripts/verify_day_pair.py
+
+      - name: Commit evidence file
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/day_pair_evidence.json
+          if git diff --cached --quiet; then
+            echo "No evidence changes to commit."
+            exit 0
+          fi
+          git commit -m "chore(data): verify real two-day pair (T04-C22~C24)"
+          git push

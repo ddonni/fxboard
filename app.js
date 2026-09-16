@@ -202,6 +202,49 @@ function renderHistoryTable(state) {
   `).join("");
 }
 
+function renderDayPairSection(state) {
+  const el = document.getElementById("day-pair-body");
+  const rows = (state.daily_readings || []).slice().sort((a, b) => a.record_date.localeCompare(b.record_date));
+
+  if (rows.length < 2) {
+    el.innerHTML = `<p class="muted">아직 서로 다른 실제 날짜의 정상 수신 기록이 2건 미만입니다 (현재 ${rows.length}건). 값을 조작하지 않고, 다음 실제 날짜에 자동 수집이 한 번 더 성공하면 이 섹션이 자동으로 채워집니다.</p>`;
+    return;
+  }
+
+  // 가장 이른 두 건(실제 "첫날"과 "다른 날") — 카드 5가 요구하는 대조 대상.
+  const [a, b] = rows;
+  const recomputed = Math.round((b.normalized_value - a.normalized_value) * 100) / 100;
+  const onlyTwo = rows.length === 2;
+  const matchesDisplayed = onlyTwo && state.last_delta !== null && state.last_delta !== undefined
+    ? Math.abs(recomputed - state.last_delta) < 0.005
+    : null;
+
+  const recordBlock = (label, rec) => `
+    <div class="evidence-col">
+      <h3>${label} — ${rec.record_date}</h3>
+      <pre class="code-block">출처 URL: ${escapeHtml(rec.reading.source_url)}
+출처 시각(KST): ${fmtDateTime(rec.reading.source_time)}
+조회 시각(KST): ${fmtDateTime(rec.reading.fetched_at)}
+값(저장값=화면값): ${fmtNum(rec.normalized_value)} ${escapeHtml(rec.unit)}
+record_id: ${escapeHtml(rec.record_id)}</pre>
+    </div>`;
+
+  el.innerHTML = `
+    <p class="meta-line">전체 정상 수신 ${rows.length}건 중, 서로 다른 실제 날짜의 가장 이른 두 건을 사용합니다.</p>
+    <div class="evidence-grid">
+      ${recordBlock("① 첫째 날", a)}
+      ${recordBlock("② 둘째 날", b)}
+    </div>
+    <div class="lkg-box" style="margin-top:14px; background: var(--bg); border:1px solid var(--border);">
+      <strong>독립 재계산:</strong> ${fmtNum(b.normalized_value)} − ${fmtNum(a.normalized_value)} =
+      <strong>${recomputed >= 0 ? "+" : ""}${fmtNum(recomputed)}원</strong>
+      (둘째 날 저장값 − 첫째 날 저장값, 위 "일별 기록" 카드가 쓰는 값과 같은 원천에서 이 함수가 독립적으로 다시 계산)
+      ${matchesDisplayed === true ? `<div class="delta up" style="margin-top:6px;">✓ 위 오늘 카드의 "전일 대비" 표시값과 일치합니다</div>` : ""}
+      ${matchesDisplayed === false ? `<div class="fail-explainer" style="margin-top:6px;">⚠ 위 표시값과 다릅니다 (기록이 ${rows.length}건으로 늘어난 이후라면 "일별 기록" 중 가장 최근 두 건 기준으로 대조하세요)</div>` : ""}
+    </div>
+  `;
+}
+
 function renderReplaySection(replayDoc) {
   const grid = document.getElementById("replay-grid");
   const replays = (replayDoc && replayDoc.replays) || {};
@@ -235,6 +278,7 @@ async function main() {
     renderTodayCard(state);
     renderEvidence(state);
     renderHistoryTable(state);
+    renderDayPairSection(state);
     renderReplaySection(replay);
   } catch (err) {
     document.getElementById("today-card").innerHTML =

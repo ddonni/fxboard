@@ -4,9 +4,14 @@
 데이터가 오지 않을 때도 마지막 정상값을 지키며 정직하게 설명하는 무로그인 공개 정보판입니다.
 
 카드 1(매일 궁금한 값 하나), 카드 2(비밀 없는 호출), 카드 3(다섯 가지 실패), 카드 4(하루
-한 줄)까지 반영되어 있습니다. 카드 3부터 데이터 모델이 ALEPH 공개 fixture 계약
-(`aleph-t04-real-information-board-public-contract-v2`)과 같은 모양으로 바뀌었습니다 —
-자세한 내용은 아래 "카드 3" 절 참고.
+한 줄), 카드 5(실제 이틀과 어제 대비)까지 반영되어 있습니다. 카드 3부터 데이터 모델이
+ALEPH 공개 fixture 계약(`aleph-t04-real-information-board-public-contract-v2`)과 같은
+모양으로 바뀌었습니다 — 자세한 내용은 아래 "카드 3" 절 참고.
+
+> **카드 5는 배포 후 실제 서로 다른 두 날짜의 데이터가 쌓여야 완성됩니다.** 이 저장소
+> 자체(코드·검증 스크립트·화면)는 모두 준비되어 있지만, `data/history.json`이 실제
+> 네트워크에 접속할 수 없는 개발 환경에서 만들어졌기 때문에 아직 비어 있습니다. 배포하고
+> 실제 이틀이 지난 뒤 아래 "카드 5" 절의 안내대로 확인하세요.
 
 ## 카드 1 통과 기준 — 화면 어디서 확인하나
 
@@ -231,6 +236,82 @@ def record_id_for(reading):
 | T04-C20 (같은 날 여러 번 성공 → 1건) | `test_same_day_dedup.py` 단계 A/B/C, `dedup-test.yml` PASS |
 | T04-C21 (다음 날 성공 → 새 1건) | `test_same_day_dedup.py` 단계 D, `dedup-test.yml` PASS |
 
+## 카드 5 통과 기준 — 실제 이틀과 어제 대비 (T04-C22~C24, C27, C28)
+
+카드 1~4는 합성 시계·합성 fixture로 로직을 시험했지만, 카드 5는 다릅니다. **실제
+공개 원천(open.er-api.com)을 서로 다른 두 실제 날짜에 진짜로 조회한 값** 두 건이
+있어야만 완성되는 카드입니다. 이 저장소를 만든 개발 환경은 외부 네트워크에 접속할 수
+없어서(샌드박스 프록시가 외부 API 도메인을 막음) 실제 값을 만들어낼 수 없었고, 과제
+지침의 "막히는 지점" 항목이 정확히 이 상황을 말하고 있습니다 — 값을 조작하지 않고,
+실제 배포 후 실제 날짜가 지나야 채워지는 카드입니다.
+
+**① 실제 배포 후 해야 할 일**
+
+1. (아직 안 했다면) 아래 "배포 방법" 절대로 GitHub + Vercel + Actions 권한 설정을
+   마칩니다.
+2. Actions 탭에서 "Collect JPY/KRW rate"를 `failure_type: none`으로 1회 수동 실행하거나,
+   매일 00:10(KST) 자동 실행을 1회 기다립니다 → 실제 **첫째 날** 기록 1건 생성.
+3. 다음 실제 KST 날짜(자정 이후)에 자동 실행이 한 번 더 성공하면(또는 다시 수동 실행) →
+   실제 **둘째 날** 기록 1건 추가. 이 시점에 `data/history.json`의 `daily_readings`가
+   정확히 2건이 됩니다 (T04-C22).
+4. 배포된 사이트를 열면 "실제 이틀 대조 — 어제 대비 재계산" 섹션이 자동으로 채워집니다.
+   각 기록의 출처 URL·출처 시각·값·단위가 저장값(=화면값)과 일치하는지 그 섹션에서 바로
+   눈으로 확인할 수 있고(T04-C23), 화면 스크립트(`app.js`의 `renderDayPairSection`)가
+   둘째 날 값 − 첫째 날 값을 독립적으로 다시 계산해서 위 오늘 카드의 "전일 대비"
+   표시값과 일치하는지도 함께 보여줍니다(T04-C24).
+5. 저장소 Actions 탭에서 "Verify two real-day pair" 워크플로를 수동 실행합니다
+   (`scripts/verify_day_pair.py`) — 화면과는 완전히 별개인 Python 코드로 같은 것을
+   한 번 더 확인하고, 결과를 `data/day_pair_evidence.json`으로 커밋해 이력에 남깁니다.
+
+**② 독립 재계산 — `scripts/verify_day_pair.py`**
+
+합성값을 전혀 쓰지 않습니다. `data/history.json`에 실제로 쌓인 기록만 읽어서:
+
+- 서로 다른 실제 날짜 중 가장 이른 두 건을 고르고 (T04-C22)
+- 각 기록의 `reading.source_url` / `reading.source_time` / `normalized_value` / `unit`이
+  저장된 행(=화면에 표시되는 값)과 정확히 일치하는지 확인하고 (T04-C23)
+- 이 스크립트 자신의 뺄셈으로 `둘째 날 값 − 첫째 날 값`을 다시 계산해서, `collect_rate.py`가
+  저장해둔 `last_delta`와 일치하는지 확인합니다 (T04-C24)
+
+실제 기록이 2건 미만이면 값을 지어내는 대신 "PENDING"으로 정직하게 보고하고 끝납니다
+(exit code 2) — 지금 이 저장소를 그대로 실행하면 이 상태입니다:
+
+```
+$ python3 scripts/verify_day_pair.py
+[PENDING] 실제 정상 수신 기록이 0건입니다 (2건 이상 필요).
+값을 조작하지 않습니다 — 실제 다음 KST 날짜에 자동/수동 수집이 한 번 더 성공하면 다시 실행하세요
+(예: GitHub Actions 'Collect JPY/KRW rate' 워크플로가 매일 00:10 KST에 자동 실행됩니다).
+```
+
+실제 이틀 데이터가 있을 때 어떤 모양으로 성공하는지는, 개발 중 실제 값과 같은 형태의
+표본으로 로컬에서 확인해뒀습니다(이 표본은 저장소에 포함하지 않았습니다 — 카드 5는
+진짜 값만 인정되므로 가짜 표본을 증거로 남기지 않습니다):
+
+```
+[PASS] 첫째 날 2026-09-16: 860.12 KRW/100JPY (출처 시각 2026-09-15T23:58:00+09:00)
+[PASS] 둘째 날 2026-09-17: 863.47 KRW/100JPY (출처 시각 2026-09-16T23:59:00+09:00)
+재계산한 어제 대비 변화: +3.35KRW
+저장된 last_delta와 일치: True
+```
+
+**③ 화면(`app.js`)에서의 독립 재계산**
+
+`renderDayPairSection()`이 `data/history.json`의 가장 이른 두 실제 기록을 골라 출처
+URL·시각·값·단위를 나란히 보여주고, `둘째 날 값 − 첫째 날 값`을 화면 스스로 다시 계산해
+위 오늘 카드의 "전일 대비" 표시값과 일치하는지 초록 체크 표시로 확인해줍니다. 실제 기록이
+2건 미만이면 "아직 서로 다른 실제 날짜의 정상 수신 기록이 2건 미만입니다"라고 정직하게
+안내합니다(값을 지어내지 않음).
+
+**④ 통과 기준 매핑**
+
+| 기준 | 확인 위치 |
+|---|---|
+| T04-C22 (서로 다른 실제 날짜 정확히 2건) | `data/history.json`의 `daily_readings` 길이, `verify_day_pair.py` |
+| T04-C23 (출처URL·시각·값·단위 저장값=화면값 일치) | 사이트 "실제 이틀 대조" 섹션, `verify_day_pair.py` |
+| T04-C24 (어제 대비 재계산이 화면값과 일치) | 사이트 "실제 이틀 대조" 섹션의 초록 체크, `verify_day_pair.py`의 `recomputed_matches_stored_last_delta` |
+| T04-C27 (확인 방법 4단 구분) | 이 README의 "확인 방법" 절 |
+| T04-C28 (제출문 3단 구분) | 이 README의 "AI와 나의 판단" 절 |
+
 ## 왜 이런 구조인가 — 기술 스택 설명
 
 ### 1. 프론트엔드: 순수 HTML/CSS/JS (프레임워크 없음)
@@ -285,16 +366,19 @@ fx-board/
 ├── data/
 │   ├── history.json                  # 일별 실제 수집 기록 (성공만 누적, 지금은 빈 상태)
 │   ├── failure_replay.json           # 5종 실패 합성 재생 기록 (자동 생성)
-│   └── same_day_dedup_evidence.json  # 하루 한 줄 합성 시계 시험 증거 (카드 4)
+│   ├── same_day_dedup_evidence.json  # 하루 한 줄 합성 시계 시험 증거 (카드 4)
+│   └── day_pair_evidence.json        # 실제 이틀 대조 증거 (카드 5, 실제 이틀 후 생성됨)
 ├── scripts/
 │   ├── collect_rate.py          # 수집기 (실제 실행 / --simulate 5종 실패 재생, 카드 3 상태모델)
 │   ├── check_secrets.py         # 비밀값 검색기 (작업 트리 + git 기록, 카드 2)
 │   ├── replay_fixtures.js       # 공식 fixture 9개 재생 채점기 (카드 3, Node 내장 기능만 사용)
-│   └── test_same_day_dedup.py   # 같은 날 재실행/다음 날 신규행 합성 시계 시험 (카드 4)
+│   ├── test_same_day_dedup.py   # 같은 날 재실행/다음 날 신규행 합성 시계 시험 (카드 4)
+│   └── verify_day_pair.py       # 실제 이틀 기록 대조 + 독립 재계산 (카드 5, 합성값 미사용)
 └── .github/workflows/
-    ├── collect-rate.yml     # 매일 자동 수집 + 수동 5종 실패 재생 워크플로
-    ├── secret-scan.yml      # push마다 비밀값 스캔 (카드 2)
-    └── dedup-test.yml       # push마다 하루 한 줄 규칙 시험 (카드 4)
+    ├── collect-rate.yml       # 매일 자동 수집 + 수동 5종 실패 재생 워크플로
+    ├── secret-scan.yml        # push마다 비밀값 스캔 (카드 2)
+    ├── dedup-test.yml         # push마다 하루 한 줄 규칙 시험 (카드 4)
+    └── verify-day-pair.yml    # 수동 실행 — 실제 이틀 데이터가 쌓인 뒤 대조 (카드 5)
 ```
 
 ## 배포 방법 (직접 진행)
@@ -324,42 +408,51 @@ git push -u origin main
    (timeout/auth/rate_limit/offline/schema_error) 5회 더 수동 실행하면, 사이트의 "실패
    시나리오 합성 재생 기록" 섹션이 채워지고 T04-C12~C19를 실제 배포 환경에서도 눈으로
    확인할 수 있습니다.
+8. **카드 5는 여기서 하루 더 기다려야 합니다.** 5번에서 실제 첫째 날 기록이 생겼으니,
+   다음 실제 KST 날짜가 지난 뒤(자정 이후 자동 실행을 기다리거나 다시 수동 실행) 실제
+   둘째 날 기록이 쌓이면, 사이트의 "실제 이틀 대조" 섹션이 채워지고 T04-C22~C24를 확인할
+   수 있습니다. 그 다음 Actions 탭에서 "Verify two real-day pair"를 한 번 수동 실행하면
+   `data/day_pair_evidence.json`으로 증거가 커밋됩니다.
 
 > Node.js(`adapter/`, `scripts/replay_fixtures.js`)는 배포에는 전혀 필요 없습니다.
 > Vercel은 정적 파일만 서빙하고, 실제 수집은 GitHub Actions의 Python이 담당합니다.
 > Node는 오직 로컬에서 "내 로직이 ALEPH 공식 fixture와 맞는지" 스스로 채점할 때만
 > 씁니다 — `node scripts/replay_fixtures.js --fixtures-dir <fixture 폴더 경로>`.
 
-## 확인 방법 (제출용, 4줄)
+## 확인 방법 (제출용, 4줄 — T04-C27)
 
-- **위치**: 배포된 사이트 상단 카드와 "일별 기록" 표, 저장소의 `scripts/check_secrets.py`,
-  `node scripts/replay_fixtures.js`, `python3 scripts/test_same_day_dedup.py` 실행 결과
-- **행동(3단계 이내)**: ① 사이트 접속해서 값·단위·출처·두 시각·기준 시간대(정상 시) 또는
-  실패 사유·마지막 정상값(오래됨 표시)·다시 시도 버튼(실패 시)을 확인 → ② Actions에서
-  워크플로들을 각각 한 번씩 수동 실행해 재생 기록/일별 기록이 규칙대로만 바뀌는지 확인
-  (같은 날 재실행은 표 행이 늘지 않고, 실패는 표를 안 건드림) → ③ 로컬에서
-  `python3 scripts/check_secrets.py`, `node scripts/replay_fixtures.js --fixtures-dir <공식
-  fixture 폴더>`, `python3 scripts/test_same_day_dedup.py` 3개를 실행
-- **통과 모습**: 정상일 땐 값/단위/출처/시각/기준시간대가 모두 보이고, 실패일 땐 5종 중 정확한
-  사유와 "오래됨(stale)" 배지가 붙은 마지막 정상값·다시 시도 버튼이 함께 보이며, 일별 기록
-  표는 실패로 줄지 않고 같은 날 재수신으로도 늘지 않음. 세 스크립트 모두 정상 종료(비밀값
-  0건 / fixture 전부 PASS / 하루-한-줄 PASS)
-- **안 될 때 모습**: 정상 기록이 없으면 "기록 없음"으로 정직하게 안내되고(빈 화면·오류 아님),
-  `check_secrets.py`가 뭔가 찾거나 `replay_fixtures.js`가 기대값과 다르거나
-  `test_same_day_dedup.py`의 assert가 실패하면(같은 날인데 행이 늘거나, 다음 날인데 행이
-  안 늘거나) 각각 원인을 출력하고 exit code 1로 실패함
+- **① 어디로 가나요**: 배포된 사이트의 "실제 이틀 대조 — 어제 대비 재계산" 섹션(위 오늘
+  카드 바로 아래 "일별 기록" 표 다음), 저장소의 `python3 scripts/verify_day_pair.py`와
+  `python3 scripts/check_secrets.py` 실행 결과
+- **② 3단계 이내 무엇을 하나요**: ① 서로 다른 실제 두 날짜에 자동 수집이 성공할 때까지
+  기다린 뒤(또는 Actions에서 수동 실행) 사이트에 접속 → ② "실제 이틀 대조" 섹션에서 두
+  기록의 출처 URL·출처 시각·값·단위를 확인하고, 재계산된 어제 대비 값이 위 오늘 카드의
+  "전일 대비" 표시값과 같은지(초록 체크) 확인 → ③ 로컬 또는 Actions의 "Verify two
+  real-day pair" 워크플로에서 `python3 scripts/verify_day_pair.py`를 실행
+- **③ 무엇이 보이면 통과인가요**: `daily_readings`가 서로 다른 실제 날짜 정확히 2건이고
+  (T04-C22), 각 기록의 출처 URL·시각·값·단위가 화면에 그대로 보이며(T04-C23),
+  `verify_day_pair.py`가 `[PASS]`로 종료하면서 재계산한 델타가 저장된 `last_delta`와
+  일치한다고 보고합니다(T04-C24)
+- **④ 안 될 때 무엇이 보이나요**: 실제 기록이 아직 2건 미만이면 사이트도 스크립트도
+  값을 지어내지 않고 "아직 2건 미만" / `[PENDING]`(exit code 2)으로 정직하게 멈추고,
+  값이 있는데도 출처·값·단위 중 하나라도 불일치하거나 재계산 값이 어긋나면
+  `verify_day_pair.py`가 `[FAIL]`과 구체적인 문제 목록을 출력하며 exit code 1로 실패함
 
-## AI와 나의 판단 (제출용, 3줄 — 실제 진행에 맞춰 다듬어서 제출하세요)
+## AI와 나의 판단 (제출용, 3줄 — T04-C28, 실제 진행에 맞춰 다듬어서 제출하세요)
 
-- **AI에게 맡긴 일**: 전체 코드 작성(수집 스크립트의 5종 실패 분류·상태기계·일별 고유키
-  갱신 규칙, GitHub Actions 워크플로, 프론트엔드, 비밀값 스캐너), ALEPH 공식 fixture
-  패키지의 SHA-256 무결성 검증, 공식 상태 모델과 동일하게 동작하는 JS 재생 어댑터
-  (`adapter/reading-store.js`) 작성과 9개 fixture 전량 재생 검증(`replay_fixtures.js`,
-  전부 PASS), "마지막 정상값이 실패로 지워지지 않는다"는 요구를 만족하는 저장 로직 설계,
-  합성 시계로 같은 날 재실행 3회·다음 날 1회를 시험하는 `test_same_day_dedup.py` 작성과
-  검증(PASS)
-- **직접 판단한 일**: 추적할 값으로 엔화/원(JPY/KRW)을 선택, 카드 단위로 순서대로 진행하기로
-  결정, GitHub 업로드·Vercel 배포·Actions 권한 설정과 5종 실패 재생·하루-한-줄 시험 수동
-  실행을 직접 수행
-- **AI 제안을 따르지 않은 일**: (실제로 진행하면서 다르게 판단한 부분이 있으면 여기에
+- **① AI에게 맡긴 일**: 전체 코드 작성(수집 스크립트의 5종 실패 분류·상태기계·일별
+  고유키 갱신 규칙, GitHub Actions 워크플로, 프론트엔드, 비밀값 스캐너), ALEPH 공식
+  fixture 패키지의 SHA-256 무결성 검증, 공식 상태 모델과 동일하게 동작하는 JS 재생
+  어댑터(`adapter/reading-store.js`) 작성과 9개 fixture 전량 재생 검증
+  (`replay_fixtures.js`, 전부 PASS), "마지막 정상값이 실패로 지워지지 않는다"는 요구를
+  만족하는 저장 로직 설계, 합성 시계로 같은 날 재실행 3회·다음 날 1회를 시험하는
+  `test_same_day_dedup.py` 작성과 검증(PASS), 실제 이틀 데이터를 조작 없이 대조·독립
+  재계산하는 `scripts/verify_day_pair.py`와 화면 섹션(`renderDayPairSection`) 작성 —
+  실제 데이터가 없는 개발 환경에서는 표본 형태로만 로직을 확인하고 저장소에는 남기지
+  않음
+- **② 직접 판단한 일**: 추적할 값으로 엔화/원(JPY/KRW)을 선택, 카드 단위로 순서대로
+  진행하기로 결정, GitHub 업로드·Vercel 배포·Actions 권한 설정과 5종 실패 재생·하루
+  한 줄 시험·(카드 5) 실제 이틀 대조 수동 실행을 직접 수행, 둘째 날 데이터가 쌓일
+  때까지 값을 조작하지 않고 실제 날짜를 기다리기로 결정
+- **③ AI 제안을 따르지 않은 일**: (실제로 진행하면서 다르게 판단한 부분이 있으면 여기에
   적으세요. 없으면 "특별히 없음 — 제안된 구조를 그대로 채택함"이라고 적으면 됩니다.)
