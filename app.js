@@ -211,11 +211,12 @@ function renderDayPairSection(state) {
     return;
   }
 
-  // 가장 이른 두 건(실제 "첫날"과 "다른 날") — 카드 5가 요구하는 대조 대상.
-  const [a, b] = rows;
+  // 가장 최근 인접한 두 건(어제, 오늘) — collect_rate.py가 last_delta를 계산할 때 쓰는
+  // 짝과 항상 같으므로, 위 오늘 카드의 "전일 대비" 표시값과 바로 대조할 수 있다.
+  const a = rows[rows.length - 2];
+  const b = rows[rows.length - 1];
   const recomputed = Math.round((b.normalized_value - a.normalized_value) * 100) / 100;
-  const onlyTwo = rows.length === 2;
-  const matchesDisplayed = onlyTwo && state.last_delta !== null && state.last_delta !== undefined
+  const matchesDisplayed = state.last_delta !== null && state.last_delta !== undefined
     ? Math.abs(recomputed - state.last_delta) < 0.005
     : null;
 
@@ -230,17 +231,17 @@ record_id: ${escapeHtml(rec.record_id)}</pre>
     </div>`;
 
   el.innerHTML = `
-    <p class="meta-line">전체 정상 수신 ${rows.length}건 중, 서로 다른 실제 날짜의 가장 이른 두 건을 사용합니다.</p>
+    <p class="meta-line">전체 정상 수신 ${rows.length}건 중, 서로 다른 실제 날짜의 가장 최근 인접한 두 건(어제·오늘)을 사용합니다.</p>
     <div class="evidence-grid">
-      ${recordBlock("① 첫째 날", a)}
-      ${recordBlock("② 둘째 날", b)}
+      ${recordBlock("① 이전 날(어제 기준)", a)}
+      ${recordBlock("② 최근 날(오늘 기준)", b)}
     </div>
     <div class="lkg-box" style="margin-top:14px; background: var(--bg); border:1px solid var(--border);">
       <strong>독립 재계산:</strong> ${fmtNum(b.normalized_value)} − ${fmtNum(a.normalized_value)} =
       <strong>${recomputed >= 0 ? "+" : ""}${fmtNum(recomputed)}원</strong>
-      (둘째 날 저장값 − 첫째 날 저장값, 위 "일별 기록" 카드가 쓰는 값과 같은 원천에서 이 함수가 독립적으로 다시 계산)
+      (최근 날 저장값 − 이전 날 저장값, 위 "일별 기록" 카드가 쓰는 값과 같은 원천에서 이 함수가 독립적으로 다시 계산)
       ${matchesDisplayed === true ? `<div class="delta up" style="margin-top:6px;">✓ 위 오늘 카드의 "전일 대비" 표시값과 일치합니다</div>` : ""}
-      ${matchesDisplayed === false ? `<div class="fail-explainer" style="margin-top:6px;">⚠ 위 표시값과 다릅니다 (기록이 ${rows.length}건으로 늘어난 이후라면 "일별 기록" 중 가장 최근 두 건 기준으로 대조하세요)</div>` : ""}
+      ${matchesDisplayed === false ? `<div class="fail-explainer" style="margin-top:6px;">⚠ 위 표시값과 다릅니다</div>` : ""}
     </div>
   `;
 }
