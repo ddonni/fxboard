@@ -51,18 +51,18 @@ fx-board의 "일별 기록" 섹션에 **CSV 다운로드 버튼**을 추가로 �
 
 ## ④ 고정 검사 10개 — 인계 시점 스냅샷
 
-| ID | 검사 | 인계 시점 결과 |
-|---|---|---|
-| CSV-01 | 0행 헤더만 | PASS |
-| CSV-02 | 1행 정확한 값 | PASS |
-| CSV-03 | 쉼표 이스케이프 | PASS |
-| CSV-04 | 큰따옴표 이스케이프 | PASS |
-| CSV-05 | 행 순서 유지 | PASS |
-| CSV-06 | 버튼 DOM 존재 | **PENDING** (DOM 미통합) |
-| CSV-07 | 클릭 결과=순수 함수 결과 | **PENDING** (DOM 미통합) |
-| CSV-08 | 접근성 | **PENDING** (DOM 미통합) |
-| CSV-09 | 기존 6개 섹션 회귀 없음 | **PENDING** (DOM 변경 자체가 없어 아직 확인 불필요하지만, B의 통합 후 반드시 재확인) |
-| CSV-10 | 비밀값 0건 + 외부 의존성 없음 | PASS (신규 파일 2개 포함해서 재확인함) |
+| ID | 검사 | 인계 시점 결과 | AI B 완료 시점 |
+|---|---|---|---|
+| CSV-01 | 0행 헤더만 | PASS | PASS |
+| CSV-02 | 1행 정확한 값 | PASS | PASS |
+| CSV-03 | 쉼표 이스케이프 | PASS | PASS |
+| CSV-04 | 큰따옴표 이스케이프 | PASS | PASS |
+| CSV-05 | 행 순서 유지 | PASS | PASS |
+| CSV-06 | 버튼 DOM 존재 | **PENDING** (DOM 미통합) | PASS |
+| CSV-07 | 클릭 결과=순수 함수 결과 | **PENDING** (DOM 미통합) | FAIL(정의 그대로) — 아래 ⑧ 참고 |
+| CSV-08 | 접근성 | **PENDING** (DOM 미통합) | PASS |
+| CSV-09 | 기존 6개 섹션 회귀 없음 | **PENDING** (DOM 변경 자체가 없어 아직 확인 불필요하지만, B의 통합 후 반드시 재확인) | PASS |
+| CSV-10 | 비밀값 0건 + 외부 의존성 없음 | PASS (신규 파일 2개 포함해서 재확인함) | PASS |
 
 ## ⑤ 사용 상한 잔여량
 
@@ -109,3 +109,16 @@ fx-board/
 - **막힌 점은 없었습니다** — 순수 로직 구현은 계획대로 20분 상한 내에 끝났습니다
   (정확한 시각은 `T05_CARD1.md` 기록 표 참고). 다운로드 파일명 규칙과 버튼 위치는
   디자인 판단이 필요해서 AI B가 직접 정하고 이유를 남겨주면 좋겠습니다.
+
+## ⑧ AI B 인수 결과 메모
+
+- 인계 문서의 미비점: ③-1은 `rowsToCsv(state.daily_readings)`를 그대로 호출하라고 했지만,
+  실제 `daily_readings` 행에는 `source_time_kst`/`fetched_time_kst` 키가 없고
+  `reading.source_time`/`reading.fetched_at`(ISO, +09:00)만 있다. 그대로 호출하면 3·4열이 빈
+  CSV가 된다. 그래서 `app.js`의 `toCsvRows()`가 4개 컬럼으로 투영(정렬 없음)한 뒤
+  `rowsToCsv`를 부른다. 그 결과 CSV-07은 문자 그대로의 정의로는 FAIL, 투영된 행 기준으로는 PASS.
+- 버튼 위치: "일별 기록" 표 바로 아래(`.csv-row`). 파일명: `fx-board-daily-<첫날>_<마지막날>.csv`.
+  0건이면 버튼은 `disabled`(에러 없음, Playwright로 확인).
+- 파일 수: AI B는 5개(app.js, index.html, style.css, T05_CARD1.md, 이 문서)를 수정 — 카드의
+  세션당 상한 8개 이내지만, ⑤의 "남은 파일 한도 4개"보다는 1개 많다.
+

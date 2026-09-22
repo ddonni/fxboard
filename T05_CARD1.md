@@ -56,20 +56,20 @@
 | 기준선 확정(이 문서 커밋 `75fd977`) | 2026-09-22T07:21:57Z | 아직 AI A는 시작 전 |
 | AI A 시작 | 2026-09-22T07:22:00Z | `date -u` 명령으로 실제 캡처, 작업 착수 직전 |
 | AI A 종료·인수인계 | 2026-09-22T07:23:03Z | 경과 약 63초 — 시간 상한(20분) 내 |
-| AI B 시작 | _(채워질 예정 — AI B가 직접 기록)_ | |
-| AI B 종료 | _(채워질 예정 — AI B가 직접 기록)_ | |
+| AI B 시작 | 2026-09-22T07:23:38Z | `date -u` 명령으로 실제 캡처, 문서를 읽기 직전 |
+| AI B 종료 | 2026-09-22T07:25:21Z | `date -u` 실제 캡처(커밋 직전) — 경과 1분 43초, 시간 상한(20분) 내 |
 
 ## 검사 결과 기록 표 (양쪽 세션이 채워 넣음)
 
 | ID | AI A 인계 시점 | AI B 완료 시점 |
 |---|---|---|
-| CSV-01 | | |
-| CSV-02 | | |
-| CSV-03 | | |
-| CSV-04 | | |
-| CSV-05 | | |
-| CSV-06 | | |
-| CSV-07 | | |
-| CSV-08 | | |
-| CSV-09 | | |
-| CSV-10 | | |
+| CSV-01 | HANDOFF ④ 스냅샷: PASS | PASS — `node scripts/test_csv_export_logic.js` 재실행 |
+| CSV-02 | HANDOFF ④ 스냅샷: PASS | PASS — 같은 스크립트 재실행 |
+| CSV-03 | HANDOFF ④ 스냅샷: PASS | PASS — 같은 스크립트 재실행 |
+| CSV-04 | HANDOFF ④ 스냅샷: PASS | PASS — 같은 스크립트 재실행 |
+| CSV-05 | HANDOFF ④ 스냅샷: PASS | PASS — 같은 스크립트 재실행 |
+| CSV-06 | HANDOFF ④ 스냅샷: PENDING | PASS — Playwright: `#history-table`이 있는 섹션 안에 role=button, 이름 "CSV 다운로드" 1개, 활성 상태 |
+| CSV-07 | HANDOFF ④ 스냅샷: PENDING | **FAIL(정의 그대로 실행 시)** — `data/history.json`의 행에는 `source_time_kst`/`fetched_time_kst` 키가 없어 `rowsToCsv(state.daily_readings)`는 3·4열이 빈 CSV를 냄. 버튼은 `reading.source_time`/`fetched_at`을 KST `YYYY-MM-DD HH:MM:SS`로 투영한 행에 `rowsToCsv`를 적용하므로 다운로드 파일은 `rowsToCsv(투영된 행)`과 문자열 완전 일치(PASS), 문자 그대로의 `rowsToCsv(state.daily_readings)`와는 불일치 |
+| CSV-08 | HANDOFF ④ 스냅샷: PENDING | PASS — aria-label "일별 기록 CSV 다운로드"(보이는 텍스트 포함), Tab 반복으로 포커스 도달, Enter로 다운로드 이벤트 발생 |
+| CSV-09 | HANDOFF ④ 스냅샷: PENDING | PASS — 변경 전(HEAD 88c8e53) vs 후 6개 섹션 innerHTML 비교: 5개 동일, 일별 기록 섹션은 버튼 영역 제거 후 공백 정규화 시 동일(`#history-table` outerHTML 완전 동일), `#today-card svg` 1개 유지, 콘솔 에러 0건 |
+| CSV-10 | HANDOFF ④ 스냅샷: PASS | PASS — `check_secrets.py` exit 0, `git diff`에 외부 script/CDN/require/import 추가 0건, `package.json`/`node_modules` 없음 |

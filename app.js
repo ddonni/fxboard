@@ -242,6 +242,52 @@ function renderHistoryTable(state) {
   `).join("");
 }
 
+// ── CSV 다운로드 (과제5 카드1, AI B) ─────────────────────────────────────
+// 주의: data/history.json의 daily_readings 행에는 source_time_kst/fetched_time_kst 키가
+// 없고 reading.source_time / reading.fetched_at(ISO, +09:00)만 있다. 그래서 csv-export.js의
+// 4개 컬럼 계약에 맞게 투영(projection)만 하고, 정렬은 하지 않는다(저장 순서 = 날짜 오름차순).
+function fmtKstPlain(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return String(iso);
+  // sv-SE 로캘은 "YYYY-MM-DD HH:MM:SS" 형식을 준다 — CSV-02 기대 형식과 동일
+  return d.toLocaleString("sv-SE", { timeZone: "Asia/Seoul", hour12: false });
+}
+
+function toCsvRows(dailyReadings) {
+  return (dailyReadings || []).map(r => ({
+    record_date: r.record_date,
+    normalized_value: r.normalized_value,
+    source_time_kst: fmtKstPlain(r.reading && r.reading.source_time),
+    fetched_time_kst: fmtKstPlain(r.reading && r.reading.fetched_at),
+  }));
+}
+
+function renderCsvButton(state) {
+  const btn = document.getElementById("csv-download-btn");
+  if (!btn || !window.CsvExport) return;
+  const rows = toCsvRows(state.daily_readings);
+  const csv = window.CsvExport.rowsToCsv(rows);
+  window.FxBoardCsv = { rows, csv }; // 검사(CSV-07)용 노출 — 읽기 전용 용도
+  if (rows.length === 0) {
+    btn.disabled = true;
+    btn.title = "내보낼 정상 수신 기록이 없습니다";
+    return;
+  }
+  btn.disabled = false;
+  btn.addEventListener("click", () => {
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `fx-board-daily-${rows[0].record_date}_${rows[rows.length - 1].record_date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  });
+}
+
 function renderDayPairSection(state) {
   const el = document.getElementById("day-pair-body");
   const rows = (state.daily_readings || []).slice().sort((a, b) => a.record_date.localeCompare(b.record_date));
@@ -321,6 +367,7 @@ async function main() {
     renderHistoryTable(state);
     renderDayPairSection(state);
     renderReplaySection(replay);
+    renderCsvButton(state);
   } catch (err) {
     document.getElementById("today-card").innerHTML =
       `<p class="fail-explainer">페이지 데이터를 불러오는 중 오류가 발생했습니다: ${err.message}</p>`;
