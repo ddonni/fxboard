@@ -73,3 +73,42 @@
 | CSV-08 | HANDOFF ④ 스냅샷: PENDING | PASS — aria-label "일별 기록 CSV 다운로드"(보이는 텍스트 포함), Tab 반복으로 포커스 도달, Enter로 다운로드 이벤트 발생 |
 | CSV-09 | HANDOFF ④ 스냅샷: PENDING | PASS — 변경 전(HEAD 88c8e53) vs 후 6개 섹션 innerHTML 비교: 5개 동일, 일별 기록 섹션은 버튼 영역 제거 후 공백 정규화 시 동일(`#history-table` outerHTML 완전 동일), `#today-card svg` 1개 유지, 콘솔 에러 0건 |
 | CSV-10 | HANDOFF ④ 스냅샷: PASS | PASS — `check_secrets.py` exit 0, `git diff`에 외부 script/CDN/require/import 추가 0건, `package.json`/`node_modules` 없음 |
+
+## 감사(audit) 기록 — AI B 결과의 독립 재검증
+
+AI B의 보고를 그대로 믿지 않고, 진행 세션이 저장소 상태만 보고 별도로 다시
+검증했습니다(AI A·AI B 어느 쪽도 아닌 제3자 감사).
+
+- **CSV-01~05, CSV-10 재검증**: `node scripts/test_csv_export_logic.js`,
+  `python3 scripts/check_secrets.py`, `git diff 88c8e53..0bbeae2`을 독립 재실행 →
+  전부 AI B의 보고와 일치.
+- **CSV-06·08·09 재검증(B의 보고와 별개로 직접 렌더링)**: `python3 -m http.server`로
+  로컬 서버를 띄우고 Playwright(Chromium, `/opt/pw-browsers/chromium`)로 실제
+  `data/history.json`(5건)을 렌더링해서 직접 DOM을 읽었습니다. 버튼 1개 존재("CSV
+  다운로드"), `aria-label="일별 기록 CSV 다운로드"`, `.focus()` 호출 시
+  `document.activeElement`가 버튼과 일치(포커스 가능) 확인. 기존 6개 섹션(오늘
+  카드의 스파크라인 svg 포함) 모두 정상 렌더링, 콘솔 에러는 브라우저 자체의
+  `favicon.ico` 404 1건뿐(사이트 코드와 무관) — 전부 B의 보고와 일치.
+- **CSV-07 재검증 — 근본 원인은 AI B가 아니라 이 문서(T05_CARD1.md)의 검사 설계
+  결함이었습니다.** `data/history.json`의 실제 `daily_readings` 행에는
+  `source_time_kst`/`fetched_time_kst`라는 키가 애초에 존재하지 않습니다(실제
+  스키마는 `reading.source_time`/`reading.fetched_at`, ISO 문자열). CSV-02의 "입력"
+  예시를 만들 때 이 문서를 작성한 세션이 실제 스키마를 확인하지 않고 필드 이름을
+  임의로 지어냈습니다. 그 결과 CSV-07을 문자 그대로("`rowsToCsv(state.daily_readings)`
+  결과와 완전 일치") 실행하면 항상 FAIL할 수밖에 없습니다 — `state.daily_readings`
+  행을 그대로 넣으면 3·4열이 빈 문자열이 되기 때문입니다. AI B는 이 결함을
+  스스로 발견해서 정직하게 보고했고(HANDOFF ⑧), 검사 정의를 몰래 바꾸지 않고
+  `toCsvRows()`로 실제 스키마를 4개 컬럼으로 투영한 뒤 `rowsToCsv`를 적용하는
+  합리적인 설계로 문제를 우회했습니다. 감사 결과, 독립적으로 다시 확인해도 다운로드된
+  CSV 내용은 `rowsToCsv(toCsvRows(state.daily_readings))`와 문자열 단위로 완전히
+  일치하고, 값 자체(날짜·환율·KST 시각)도 실제 배포 데이터와 정확히 맞습니다.
+  **결론: 정의된 문구 그대로는 FAIL이 맞지만, 이는 구현 결함이 아니라 검사
+  설계자(AI A 이전 단계)가 실제 데이터 스키마를 확인하지 않고 검사를 만든
+  결함입니다.** 검사 정의를 사후에 몰래 고치지 않고, 있는 그대로(FAIL)
+  남겨둔 채 이 절에 원인을 정정 기록합니다. 이후 카드에서 검사를 다시 쓸
+  기회가 있다면 CSV-07을 "`rowsToCsv(toCsvRows(state.daily_readings))`와 완전
+  일치"로 정정해야 정확합니다.
+
+**결론: AI B가 보고한 10개 검사 결과(9 PASS + 1 FAIL)는 저장소 실제 상태와
+전부 일치합니다. 유일한 FAIL(CSV-07)은 AI B의 잘못이 아니라 검사 설계 단계의
+결함이며, AI B는 이를 숨기지 않고 정확하게 보고했습니다.**
