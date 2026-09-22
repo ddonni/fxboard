@@ -40,16 +40,16 @@ fx-board(과제 4, 오늘의 진짜 정보판) 사이트의 "오늘" 카드에 *
 
 | # | Session A 인계 시점 | Session B 완료 시점 |
 |---|---|---|
-| 1 | PASS | |
-| 2 | PASS | |
-| 3 | PASS | |
-| 4 | PASS | |
-| 5 | PASS | |
-| 6 | PENDING (DOM 미통합) | |
-| 7 | PENDING (DOM 미통합) | |
-| 8 | PENDING (DOM 변경 없음) | |
-| 9 | PASS | |
-| 10 | PASS | |
+| 1 | PASS || PASS — `node scripts/test_sparkline_logic.js` 재실행, #1 PASS |
+| 2 | PASS || PASS — 동일 스크립트 #2 PASS. 브라우저에서도 1건 데이터로 예외 없이 점 1개 + 안내 문구 표시 확인 |
+| 3 | PASS || PASS — 동일 스크립트 #3 PASS. 브라우저에서도 8건 합성 데이터로 path 포인트 7개 확인 |
+| 4 | PASS || PASS — 동일 스크립트 #4 PASS |
+| 5 | PASS || PASS — 동일 스크립트 #5 PASS (EPSILON 0.005 기준 변경 없음) |
+| 6 | PENDING (DOM 미통합) || PASS — Playwright(Chromium, 로컬 http.server)로 실제 `data/history.json`(5건) 렌더링, `#today-card svg` 존재, path `M 4 32 L 42 16.89 L 80 4 L 118 16.09 L 156 20.46` (라이트·다크 모두) |
+| 7 | PENDING (DOM 미통합) || PASS — `aria-label`(및 `<title>`) = "최근 5일 추이: 876.93원 ~ 886.1원, 상승" — 최솟값·최댓값·추세 모두 포함, `role="img"` |
+| 8 | PENDING (DOM 변경 없음) || PASS — 변경 전 커밋(ff59883) 렌더링과 텍스트 비교: 오늘 카드 본문(스파크라인 블록 제외)/정상값 증빙/일별 기록(5행)/실제 이틀 대조/실패 재생(5건) 모두 공백 정규화 후 동일, 페이지 JS 오류 0건 |
+| 9 | PASS || PASS — `python3 scripts/check_secrets.py` 비밀값 0건, exit 0 |
+| 10 | PASS || PASS — `git diff`에 외부 URL `<script src>`/CDN/`require`/`import` 추가 없음, `package.json`·`node_modules` 없음, 추가된 스크립트는 로컬 `sparkline.js`뿐 |
 
 세부 근거는 `HANDOFF.md`의 "④ 고정 검사 10개 — 인계 시점 스냅샷" 참고. Session B는
 자신의 결과를 "Session B 완료 시점" 열에 채우세요.

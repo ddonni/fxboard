@@ -290,6 +290,33 @@ td.num { font-family: var(--mono); }
 .about-list li { margin-bottom: 6px; }
 .about-list strong { color: var(--fg); }
 
+/* 과제 5: 오늘 카드 스파크라인 — 기존 --accent를 재사용해 라이트/다크 모두 대비 확보 */
+.sparkline-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.sparkline { display: block; overflow: visible; }
+
+.sparkline-line {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sparkline-dot { fill: var(--accent); }
+
+.sparkline-caption {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 .page-footer {
   max-width: 760px;
   margin: 0 auto;
