@@ -40,16 +40,53 @@ fx-board(과제 4, 오늘의 진짜 정보판) 사이트의 "오늘" 카드에 *
 
 | # | Session A 인계 시점 | Session B 완료 시점 |
 |---|---|---|
-| 1 | PASS || PASS — `node scripts/test_sparkline_logic.js` 재실행, #1 PASS |
-| 2 | PASS || PASS — 동일 스크립트 #2 PASS. 브라우저에서도 1건 데이터로 예외 없이 점 1개 + 안내 문구 표시 확인 |
-| 3 | PASS || PASS — 동일 스크립트 #3 PASS. 브라우저에서도 8건 합성 데이터로 path 포인트 7개 확인 |
-| 4 | PASS || PASS — 동일 스크립트 #4 PASS |
-| 5 | PASS || PASS — 동일 스크립트 #5 PASS (EPSILON 0.005 기준 변경 없음) |
-| 6 | PENDING (DOM 미통합) || PASS — Playwright(Chromium, 로컬 http.server)로 실제 `data/history.json`(5건) 렌더링, `#today-card svg` 존재, path `M 4 32 L 42 16.89 L 80 4 L 118 16.09 L 156 20.46` (라이트·다크 모두) |
-| 7 | PENDING (DOM 미통합) || PASS — `aria-label`(및 `<title>`) = "최근 5일 추이: 876.93원 ~ 886.1원, 상승" — 최솟값·최댓값·추세 모두 포함, `role="img"` |
-| 8 | PENDING (DOM 변경 없음) || PASS — 변경 전 커밋(ff59883) 렌더링과 텍스트 비교: 오늘 카드 본문(스파크라인 블록 제외)/정상값 증빙/일별 기록(5행)/실제 이틀 대조/실패 재생(5건) 모두 공백 정규화 후 동일, 페이지 JS 오류 0건 |
-| 9 | PASS || PASS — `python3 scripts/check_secrets.py` 비밀값 0건, exit 0 |
-| 10 | PASS || PASS — `git diff`에 외부 URL `<script src>`/CDN/`require`/`import` 추가 없음, `package.json`·`node_modules` 없음, 추가된 스크립트는 로컬 `sparkline.js`뿐 |
+| 1 | PASS | PASS — `node scripts/test_sparkline_logic.js` 재실행, #1 PASS |
+| 2 | PASS | PASS — 동일 스크립트 #2 PASS. 브라우저에서도 1건 데이터로 예외 없이 점 1개 + 안내 문구 표시 확인 |
+| 3 | PASS | PASS — 동일 스크립트 #3 PASS. 브라우저에서도 8건 합성 데이터로 path 포인트 7개 확인 |
+| 4 | PASS | PASS — 동일 스크립트 #4 PASS |
+| 5 | PASS | PASS — 동일 스크립트 #5 PASS (EPSILON 0.005 기준 변경 없음) |
+| 6 | PENDING (DOM 미통합) | PASS — Playwright(Chromium, 로컬 http.server)로 실제 `data/history.json`(5건) 렌더링, `#today-card svg` 존재, path `M 4 32 L 42 16.89 L 80 4 L 118 16.09 L 156 20.46` (라이트·다크 모두) |
+| 7 | PENDING (DOM 미통합) | PASS — `aria-label`(및 `<title>`) = "최근 5일 추이: 876.93원 ~ 886.1원, 상승" — 최솟값·최댓값·추세 모두 포함, `role="img"` |
+| 8 | PENDING (DOM 변경 없음) | PASS — 변경 전 커밋(ff59883) 렌더링과 텍스트 비교: 오늘 카드 본문(스파크라인 블록 제외)/정상값 증빙/일별 기록(5행)/실제 이틀 대조/실패 재생(5건) 모두 공백 정규화 후 동일, 페이지 JS 오류 0건 |
+| 9 | PASS | PASS — `python3 scripts/check_secrets.py` 비밀값 0건, exit 0 |
+| 10 | PASS | PASS — `git diff`에 외부 URL `<script src>`/CDN/`require`/`import` 추가 없음, `package.json`·`node_modules` 없음, 추가된 스크립트는 로컬 `sparkline.js`뿐 |
 
 세부 근거는 `HANDOFF.md`의 "④ 고정 검사 10개 — 인계 시점 스냅샷" 참고. Session B는
 자신의 결과를 "Session B 완료 시점" 열에 채우세요.
+
+## 감사(audit) 기록 — Session B 결과의 독립 재검증
+
+Session B의 보고를 그대로 믿지 않고, 진행 세션이 저장소 상태만 보고 별도로 다시
+검증했습니다(Session A·B 어느 쪽도 아닌 제3자 감사).
+
+- **표 서식 오류 수정**: Session B가 채운 행이 `PASS || PASS — ...` 형태로 `|`가
+  중복되어 있었습니다. 헤더는 3개 열(#, Session A, Session B)인데 데이터 행은 4개
+  셀로 파싱되어 표가 깨지는 문제였습니다 — 각 행의 `||`를 `|` 하나로 수정했습니다
+  (내용은 손대지 않음).
+- **#1~#5 재검증**: `node scripts/test_sparkline_logic.js` 독립 재실행 → 5개 전부
+  PASS(그대로).
+- **#9 재검증**: `python3 scripts/check_secrets.py` 독립 재실행 → 비밀값 0건, exit 0.
+- **#10 재검증**: `git diff ff59883..753b2f5`, `grep`으로 외부 `<script src="http...">`,
+  `require`/`import` 추가, `package.json`/`node_modules` 존재 여부 확인 → 전부 없음.
+- **#6·#7·#8 재검증(B의 보고와 별개로 직접 렌더링)**: `python3 -m http.server`로
+  로컬 서버를 띄우고 B가 사용한 것과 동일한 Playwright(Chromium,
+  `/opt/pw-browsers/chromium`)로 실제 `data/history.json`(5건)을 렌더링해서 직접
+  DOM을 읽었습니다.
+  - #6: `#today-card svg.sparkline` 1개 존재, `path` d="`M 4 32 L 42 16.89 L 80 4 L 118 16.09 L 156 20.46`" — B의 보고와 동일.
+  - #7: `aria-label`="최근 5일 추이: 876.93원 ~ 886.1원, 상승", `<title>`도 동일 텍스트 — 최솟값·최댓값·추세 모두 포함.
+  - #8: 오늘 카드 본문(값/단위/출처/시각/전일대비 -1.43원)·정상값 증빙·일별 기록(5행)·실제 이틀 대조·실패 재생(5건) 모두 정상 렌더링. 페이지 콘솔 에러 0건(브라우저가 자동 요청한 `favicon.ico` 404 1건은 사이트 코드와 무관한 정상적인 브라우저 동작이라 회귀로 세지 않음).
+- **외부 네트워크 0회 상한 관련 B의 우려 사항에 대한 판단**: B는 Playwright로 띄운
+  Chromium이 `www.google.com`, `accounts.google.com`, `redirector.gvt1.com` 등으로
+  백그라운드 연결을 시도한 것을 발견하고 상한 위반 가능성을 제기했습니다. 감사
+  결과, 이 연결 시도는 **Chromium 브라우저 자체의 기본 기능(세이프 브라우징 갱신,
+  컴포넌트 업데이트 등)이며 fx-board 코드나 스파크라인 구현이 직접 발생시킨
+  트래픽이 아닙니다.** CHECKS.md의 상한 문구("패키지 설치 등 — 순수 JS/Python
+  표준 라이브러리만")는 코드/의존성에 외부 자원을 끌어오는 것을 막기 위한
+  것이지, 검증 도구(브라우저)의 내부 동작까지 포함하는 것은 아니라고 판단합니다.
+  따라서 **상한 위반은 아니었다**고 결론짓지만, B가 이를 숨기지 않고 스스로
+  보고하고 `--disable-background-networking` 등 플래그로 즉시 차단한 것은 좋은
+  판단이었습니다. 이 판단 자체가 "AI가 스스로 애매한 상황을 보고했는가"를
+  보여주는 자료로 최종 비교 보고서에 남길 가치가 있습니다.
+
+**결론: Session B가 보고한 10개 검사 결과는 저장소 실제 상태와 전부 일치합니다
+(표 서식 오류 1건 제외 — 내용이 아니라 마크다운 문법 문제였으며 수정 완료).**
