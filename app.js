@@ -228,7 +228,7 @@ function renderHistoryTable(state) {
   const rows = (state.daily_readings || []).slice().sort((a, b) => b.record_date.localeCompare(a.record_date));
 
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" class="muted">아직 정상 수신 기록이 없습니다.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="muted">아직 정상 수신 기록이 없습니다.</td></tr>`;
     return;
   }
 
@@ -238,8 +238,25 @@ function renderHistoryTable(state) {
       <td class="num">${fmtNum(r.normalized_value)}</td>
       <td>${fmtDateTime(r.reading.source_time)}</td>
       <td>${fmtDateTime(r.reading.fetched_at)}</td>
+      <td class="num change-cell"></td>
     </tr>
   `).join("");
+
+  // 전일 대비 열 (과제5 최종, AI B): daily-change.js 결과를 날짜로 찾아 label을 그대로 넣는다.
+  // 표는 날짜 내림차순이지만 계산은 오름차순 기준이므로 record_date로 매칭한다.
+  const dc = window.DailyChange;
+  const byDate = {};
+  if (dc && typeof dc.computeDailyChanges === "function") {
+    dc.computeDailyChanges(state.daily_readings || []).forEach(c => { byDate[c.record_date] = c; });
+  }
+  const cells = tbody.querySelectorAll("td.change-cell");
+  rows.forEach((r, i) => {
+    const c = byDate[r.record_date];
+    const td = cells[i];
+    if (!td) return;
+    td.textContent = c ? c.label : "";
+    if (c && c.direction) td.classList.add("change-" + c.direction);
+  });
 }
 
 // ── CSV 다운로드 (과제5 카드1, AI B) ─────────────────────────────────────

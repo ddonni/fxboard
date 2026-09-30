@@ -188,6 +188,10 @@ th, td {
 th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.02em; }
 
 td.num { font-family: var(--mono); }
+/* 전일 대비 열 (과제5 최종): 글자는 label 그대로, 색만 방향별로 */
+td.change-cell { white-space: nowrap; }
+td.change-up { color: #c62828; }
+td.change-down { color: #1565c0; }
 
 /* replay grid */
 .replay-grid {
