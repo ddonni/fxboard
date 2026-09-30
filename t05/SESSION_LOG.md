@@ -5,7 +5,7 @@
 | 단계 | UTC 시각 | 버전(커밋) | 기록자 | 비고 |
 |---|---|---|---|---|
 | 기준선 확정 | `git log -1 --format=%cI t05f-baseline` | 태그 `t05f-baseline` | 학생 | 요청·검사 10개·상한 고정 |
-| AI A 시작 | | 기준선 | AI A | |
+| AI A 시작 | 2026-09-30T05:22:52Z | 기준선 (`75bb6e5`) | AI A | `date -u +%FT%T` 결과(Z 생략), 첫 도구 호출 시점 |
 | AI A 종료·인계 | | | AI A | |
 | AI B 시작 | | | AI B | 받은 `t05/HANDOFF.md` sha256: |
 | AI B 완료 | | | AI B | |
