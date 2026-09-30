@@ -8,14 +8,17 @@
 "아직 부족함"을 정직하게 보고하고 끝난다 (exit code 2) — 이것도 assignment 지침
 ("기록을 조작하지 않음 → 다른 과제를 진행 → 다음 실제 날짜에 다시 확인")을 그대로 따른 것.
 
-2건 이상이면 시간순으로 가장 이른 두 건(첫날, 다른 날)을 골라:
+2건 이상이면 시간순으로 가장 최근 인접한 두 건(어제, 오늘)을 골라 — 자동 수집이 매일
+쌓이면서 실제 기록이 2건보다 많아질 수 있는데, 그중에서도 "가장 최근 두 건"이 바로
+collect_rate.py가 last_delta를 계산할 때 쓰는 짝이자 화면 상단 카드의 "전일 대비"가
+표시하는 짝이다. 그래서 이 두 건을 대조해야 재계산 결과가 실제 화면값과 맞아떨어진다:
   - T04-C22: 두 기록의 record_date(Asia/Seoul 기준)가 서로 다른지 확인
   - T04-C23: 각 기록의 reading.source_url / reading.source_time / normalized_value / unit이
     저장된 일별 행(row)의 값과 정확히 일치하는지 확인 (row가 곧 화면에 표시되는 값이므로,
     이 일치는 "저장값 = 화면값"의 근거가 된다 — app.js의 renderHistoryTable/renderDayPairSection이
     같은 row 필드를 그대로 읽어서 그린다)
-  - T04-C24: app.js와는 별개로, 이 스크립트 자신의 코드로 delta = 둘째 날 값 - 첫째 날 값을
-    다시 계산해서, (기록이 정확히 2건일 때는) collect_rate.py가 저장해둔 state.last_delta와
+  - T04-C24: app.js와는 별개로, 이 스크립트 자신의 코드로 delta = 최근 날 값 - 이전 날 값을
+    다시 계산해서, collect_rate.py가 저장해둔 state.last_delta(=화면의 "전일 대비" 표시값)와
     일치하는지 확인
 
 data/day_pair_evidence.json에 결과를 남긴다.
@@ -75,7 +78,7 @@ def main():
               "매일 00:10 KST에 자동 실행됩니다).")
         sys.exit(2)
 
-    a, b = rows[0], rows[1]  # 서로 다른 실제 날짜 중 가장 이른 두 건
+    a, b = rows[-2], rows[-1]  # 서로 다른 실제 날짜 중 가장 최근 인접한 두 건 (어제, 오늘)
 
     problems = []
 
@@ -84,7 +87,7 @@ def main():
         problems.append(f"두 기록의 record_date가 같음: {a['record_date']}")
 
     # T04-C23: reading(원천 메타데이터)과 row(저장/화면 표시값)가 서로 일치하는지
-    for label, row in (("첫째 날", a), ("둘째 날", b)):
+    for label, row in (("이전 날", a), ("최근 날", b)):
         reading = row["reading"]
         if row["normalized_value"] != reading["normalized_value"]:
             problems.append(f"{label}: row.normalized_value({row['normalized_value']}) != "
@@ -96,30 +99,31 @@ def main():
         if not reading.get("source_time"):
             problems.append(f"{label}: source_time이 비어있음")
 
-    # T04-C24: 독립 재계산 — 이 스크립트 자신의 뺄셈으로 delta를 다시 구한다
+    # T04-C24: 독립 재계산 — 이 스크립트 자신의 뺄셈으로 delta를 다시 구한다.
+    # a, b가 항상 "가장 최근 인접한 두 건"이므로, 이 값은 collect_rate.py가 저장한
+    # last_delta(=화면의 "전일 대비" 표시값)와 항상 비교 가능하다.
     recomputed_delta = round(b["normalized_value"] - a["normalized_value"], 2)
     stored_last_delta = state.get("last_delta")
-    matches_stored = None
-    if len(rows) == 2:
-        matches_stored = (
-            stored_last_delta is not None
-            and abs(recomputed_delta - stored_last_delta) < 0.005
+    matches_stored = (
+        stored_last_delta is not None
+        and abs(recomputed_delta - stored_last_delta) < 0.005
+    )
+    if not matches_stored:
+        problems.append(
+            f"재계산한 delta({recomputed_delta})가 저장된 last_delta({stored_last_delta})와 다름"
         )
-        if not matches_stored:
-            problems.append(
-                f"재계산한 delta({recomputed_delta})가 저장된 last_delta({stored_last_delta})와 다름"
-            )
 
     result = "FAIL" if problems else "PASS"
 
     evidence = {
         "note": (
             "이 파일은 실제 공개 원천(open.er-api.com)을 조회해 얻은 진짜 기록만 사용합니다. "
-            "합성값·시뮬레이션 값은 전혀 섞여 있지 않습니다 (T04-C22~C24 검증용, 카드 5)."
+            "합성값·시뮬레이션 값은 전혀 섞여 있지 않습니다 (T04-C22~C24 검증용, 카드 5). "
+            "두 기록은 전체 실제 기록 중 가장 최근 인접한 두 건(어제·오늘)입니다."
         ),
         "total_real_records": len(rows),
-        "first_day": record_summary(a),
-        "second_day": record_summary(b),
+        "previous_day": record_summary(a),
+        "latest_day": record_summary(b),
         "recomputed_delta": recomputed_delta,
         "stored_last_delta": stored_last_delta,
         "recomputed_matches_stored_last_delta": matches_stored,
@@ -128,15 +132,13 @@ def main():
     }
     save_json(args.out, evidence)
 
-    print(f"[{result}] 첫째 날 {a['record_date']}: {a['normalized_value']} {a['unit']} "
+    print(f"[{result}] 이전 날 {a['record_date']}: {a['normalized_value']} {a['unit']} "
           f"(출처 시각 {a['reading']['source_time']})")
-    print(f"[{result}] 둘째 날 {b['record_date']}: {b['normalized_value']} {b['unit']} "
+    print(f"[{result}] 최근 날 {b['record_date']}: {b['normalized_value']} {b['unit']} "
           f"(출처 시각 {b['reading']['source_time']})")
     print(f"재계산한 어제 대비 변화: {recomputed_delta:+.2f}{a['unit'].split('/')[0] if '/' in a['unit'] else ''}")
-    if len(rows) == 2:
-        print(f"저장된 last_delta와 일치: {matches_stored}")
-    else:
-        print(f"(참고: 실제 기록이 {len(rows)}건이라 last_delta는 최근 두 건 기준이라 직접 비교는 생략)")
+    print(f"저장된 last_delta(화면 '전일 대비' 표시값)와 일치: {matches_stored}")
+    print(f"(전체 실제 기록 {len(rows)}건 중 가장 최근 인접한 두 건을 사용)")
     print(f"증거 저장: {args.out}")
 
     if problems:

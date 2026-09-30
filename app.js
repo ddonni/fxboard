@@ -70,6 +70,44 @@ function renderRefTzBanner(state) {
   el.textContent = `기준 시간대: ${tz} — 이 페이지의 모든 시각은 KST로 표시됩니다.`;
 }
 
+// 과제 5: "오늘" 카드 안에 들어가는 최근 7일 추이 스파크라인(sparkline.js의 순수 로직 사용).
+// 기존 카드 본문은 건드리지 않고, 이 함수가 만든 블록을 카드 끝에 "추가"만 한다.
+const SPARK_W = 160;
+const SPARK_H = 36;
+const SPARK_PAD = 4;
+
+function sparklineHtml(state) {
+  const S = window.Sparkline;
+  if (!S) return ""; // sparkline.js 로드 실패 시에도 기존 카드는 그대로 보이게
+  const series = S.computeTrendSeries(state.daily_readings || []);
+  const label = S.buildAriaLabel(series, "원");
+
+  if (series.count === 0) {
+    return `<div class="sparkline-wrap sparkline-empty">
+      <p class="meta-line">최근 추이: 아직 정상 기록이 없어 그래프를 그릴 수 없습니다.</p>
+    </div>`;
+  }
+
+  const d = S.buildSparklinePath(series, { width: SPARK_W, height: SPARK_H, padding: SPARK_PAD });
+  // 마지막(가장 최근) 점 좌표 = path의 마지막 "x y" 쌍
+  const nums = d.trim().split(/\s+/);
+  const lx = nums[nums.length - 2];
+  const ly = nums[nums.length - 1];
+  const caption = series.count === 1
+    ? "최근 기록 1건 — 추세는 2건 이상 쌓이면 표시됩니다."
+    : label;
+
+  return `<div class="sparkline-wrap">
+    <svg class="sparkline trend-${series.trend}" width="${SPARK_W}" height="${SPARK_H}"
+         viewBox="0 0 ${SPARK_W} ${SPARK_H}" role="img" aria-label="${escapeHtml(label)}">
+      <title>${escapeHtml(label)}</title>
+      <path class="sparkline-line" d="${d}" fill="none" />
+      <circle class="sparkline-dot" cx="${lx}" cy="${ly}" r="2.5" />
+    </svg>
+    <span class="sparkline-caption" aria-hidden="true">${escapeHtml(caption)}</span>
+  </div>`;
+}
+
 function renderTodayCard(state) {
   const el = document.getElementById("today-card");
   const unit = state.unit_label_ko || state.unit;
@@ -104,6 +142,7 @@ function renderTodayCard(state) {
              ${state.last_delta > 0 ? "▲" : state.last_delta < 0 ? "▼" : "＝"}
              ${state.last_delta >= 0 ? "+" : ""}${fmtNum(state.last_delta)}원 (전일 대비)</p>`
         : `<p class="meta-line">비교할 이전 정상 기록이 아직 없습니다.</p>`}
+      ${sparklineHtml(state)}
     `;
     return;
   }
@@ -131,6 +170,7 @@ function renderTodayCard(state) {
          </div>`
       : `<p class="meta-line">보존된 이전 정상값이 아직 없습니다 (첫 수집부터 실패한 경우).</p>`}
     <p class="retry-row">${retryLinkHtml()}</p>
+    ${sparklineHtml(state)}
   `;
 }
 
@@ -188,7 +228,7 @@ function renderHistoryTable(state) {
   const rows = (state.daily_readings || []).slice().sort((a, b) => b.record_date.localeCompare(a.record_date));
 
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" class="muted">아직 정상 수신 기록이 없습니다.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="muted">아직 정상 수신 기록이 없습니다.</td></tr>`;
     return;
   }
 
@@ -198,8 +238,71 @@ function renderHistoryTable(state) {
       <td class="num">${fmtNum(r.normalized_value)}</td>
       <td>${fmtDateTime(r.reading.source_time)}</td>
       <td>${fmtDateTime(r.reading.fetched_at)}</td>
+      <td class="num change-cell"></td>
     </tr>
   `).join("");
+
+  // 전일 대비 열 (과제5 최종, AI B): daily-change.js 결과를 날짜로 찾아 label을 그대로 넣는다.
+  // 표는 날짜 내림차순이지만 계산은 오름차순 기준이므로 record_date로 매칭한다.
+  const dc = window.DailyChange;
+  const byDate = {};
+  if (dc && typeof dc.computeDailyChanges === "function") {
+    dc.computeDailyChanges(state.daily_readings || []).forEach(c => { byDate[c.record_date] = c; });
+  }
+  const cells = tbody.querySelectorAll("td.change-cell");
+  rows.forEach((r, i) => {
+    const c = byDate[r.record_date];
+    const td = cells[i];
+    if (!td) return;
+    td.textContent = c ? c.label : "";
+    if (c && c.direction) td.classList.add("change-" + c.direction);
+  });
+}
+
+// ── CSV 다운로드 (과제5 카드1, AI B) ─────────────────────────────────────
+// 주의: data/history.json의 daily_readings 행에는 source_time_kst/fetched_time_kst 키가
+// 없고 reading.source_time / reading.fetched_at(ISO, +09:00)만 있다. 그래서 csv-export.js의
+// 4개 컬럼 계약에 맞게 투영(projection)만 하고, 정렬은 하지 않는다(저장 순서 = 날짜 오름차순).
+function fmtKstPlain(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return String(iso);
+  // sv-SE 로캘은 "YYYY-MM-DD HH:MM:SS" 형식을 준다 — CSV-02 기대 형식과 동일
+  return d.toLocaleString("sv-SE", { timeZone: "Asia/Seoul", hour12: false });
+}
+
+function toCsvRows(dailyReadings) {
+  return (dailyReadings || []).map(r => ({
+    record_date: r.record_date,
+    normalized_value: r.normalized_value,
+    source_time_kst: fmtKstPlain(r.reading && r.reading.source_time),
+    fetched_time_kst: fmtKstPlain(r.reading && r.reading.fetched_at),
+  }));
+}
+
+function renderCsvButton(state) {
+  const btn = document.getElementById("csv-download-btn");
+  if (!btn || !window.CsvExport) return;
+  const rows = toCsvRows(state.daily_readings);
+  const csv = window.CsvExport.rowsToCsv(rows);
+  window.FxBoardCsv = { rows, csv }; // 검사(CSV-07)용 노출 — 읽기 전용 용도
+  if (rows.length === 0) {
+    btn.disabled = true;
+    btn.title = "내보낼 정상 수신 기록이 없습니다";
+    return;
+  }
+  btn.disabled = false;
+  btn.addEventListener("click", () => {
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `fx-board-daily-${rows[0].record_date}_${rows[rows.length - 1].record_date}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  });
 }
 
 function renderDayPairSection(state) {
@@ -211,11 +314,12 @@ function renderDayPairSection(state) {
     return;
   }
 
-  // 가장 이른 두 건(실제 "첫날"과 "다른 날") — 카드 5가 요구하는 대조 대상.
-  const [a, b] = rows;
+  // 가장 최근 인접한 두 건(어제, 오늘) — collect_rate.py가 last_delta를 계산할 때 쓰는
+  // 짝과 항상 같으므로, 위 오늘 카드의 "전일 대비" 표시값과 바로 대조할 수 있다.
+  const a = rows[rows.length - 2];
+  const b = rows[rows.length - 1];
   const recomputed = Math.round((b.normalized_value - a.normalized_value) * 100) / 100;
-  const onlyTwo = rows.length === 2;
-  const matchesDisplayed = onlyTwo && state.last_delta !== null && state.last_delta !== undefined
+  const matchesDisplayed = state.last_delta !== null && state.last_delta !== undefined
     ? Math.abs(recomputed - state.last_delta) < 0.005
     : null;
 
@@ -230,17 +334,17 @@ record_id: ${escapeHtml(rec.record_id)}</pre>
     </div>`;
 
   el.innerHTML = `
-    <p class="meta-line">전체 정상 수신 ${rows.length}건 중, 서로 다른 실제 날짜의 가장 이른 두 건을 사용합니다.</p>
+    <p class="meta-line">전체 정상 수신 ${rows.length}건 중, 서로 다른 실제 날짜의 가장 최근 인접한 두 건(어제·오늘)을 사용합니다.</p>
     <div class="evidence-grid">
-      ${recordBlock("① 첫째 날", a)}
-      ${recordBlock("② 둘째 날", b)}
+      ${recordBlock("① 이전 날(어제 기준)", a)}
+      ${recordBlock("② 최근 날(오늘 기준)", b)}
     </div>
     <div class="lkg-box" style="margin-top:14px; background: var(--bg); border:1px solid var(--border);">
       <strong>독립 재계산:</strong> ${fmtNum(b.normalized_value)} − ${fmtNum(a.normalized_value)} =
       <strong>${recomputed >= 0 ? "+" : ""}${fmtNum(recomputed)}원</strong>
-      (둘째 날 저장값 − 첫째 날 저장값, 위 "일별 기록" 카드가 쓰는 값과 같은 원천에서 이 함수가 독립적으로 다시 계산)
+      (최근 날 저장값 − 이전 날 저장값, 위 "일별 기록" 카드가 쓰는 값과 같은 원천에서 이 함수가 독립적으로 다시 계산)
       ${matchesDisplayed === true ? `<div class="delta up" style="margin-top:6px;">✓ 위 오늘 카드의 "전일 대비" 표시값과 일치합니다</div>` : ""}
-      ${matchesDisplayed === false ? `<div class="fail-explainer" style="margin-top:6px;">⚠ 위 표시값과 다릅니다 (기록이 ${rows.length}건으로 늘어난 이후라면 "일별 기록" 중 가장 최근 두 건 기준으로 대조하세요)</div>` : ""}
+      ${matchesDisplayed === false ? `<div class="fail-explainer" style="margin-top:6px;">⚠ 위 표시값과 다릅니다</div>` : ""}
     </div>
   `;
 }
@@ -280,6 +384,7 @@ async function main() {
     renderHistoryTable(state);
     renderDayPairSection(state);
     renderReplaySection(replay);
+    renderCsvButton(state);
   } catch (err) {
     document.getElementById("today-card").innerHTML =
       `<p class="fail-explainer">페이지 데이터를 불러오는 중 오류가 발생했습니다: ${err.message}</p>`;

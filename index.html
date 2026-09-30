@@ -38,12 +38,16 @@
               <th>100엔당 KRW</th>
               <th>출처 시각(KST)</th>
               <th>조회 시각(KST)</th>
+              <th>전일 대비</th>
             </tr>
           </thead>
           <tbody id="history-tbody">
-            <tr><td colspan="4" class="muted">불러오는 중…</td></tr>
+            <tr><td colspan="5" class="muted">불러오는 중…</td></tr>
           </tbody>
         </table>
+      </div>
+      <div class="csv-row">
+        <button type="button" id="csv-download-btn" class="retry-btn csv-btn" aria-label="일별 기록 CSV 다운로드" disabled>CSV 다운로드</button>
       </div>
     </section>
 
@@ -79,9 +83,13 @@
     <p>
       데이터 출처: <a href="https://open.er-api.com/v6/latest/JPY" target="_blank" rel="noopener">open.er-api.com</a>
       · 소스코드: <a id="source-link" href="#" target="_blank" rel="noopener">GitHub</a>
+      · <a href="report.html">과제 5 비교 보고서</a>
     </p>
   </footer>
 
+  <script src="sparkline.js"></script>
+  <script src="csv-export.js"></script>
+  <script src="daily-change.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,0 +1,27 @@
+{
+  "note": "이 파일은 실제 공개 원천(open.er-api.com)을 조회해 얻은 진짜 기록만 사용합니다. 합성값·시뮬레이션 값은 전혀 섞여 있지 않습니다 (T04-C22~C24 검증용, 카드 5). 두 기록은 전체 실제 기록 중 가장 최근 인접한 두 건(어제·오늘)입니다.",
+  "total_real_records": 5,
+  "previous_day": {
+    "record_date": "2026-09-20",
+    "source_url": "https://open.er-api.com/v6/latest/JPY",
+    "source_time": "2026-09-19T09:02:31+09:00",
+    "fetched_at": "2026-09-20T02:56:09.575135+09:00",
+    "normalized_value": 882.14,
+    "unit": "KRW/100JPY",
+    "record_id": "jpy-krw-100-2026-09-20"
+  },
+  "latest_day": {
+    "record_date": "2026-09-21",
+    "source_url": "https://open.er-api.com/v6/latest/JPY",
+    "source_time": "2026-09-20T09:02:31+09:00",
+    "fetched_at": "2026-09-21T03:10:27.311192+09:00",
+    "normalized_value": 880.71,
+    "unit": "KRW/100JPY",
+    "record_id": "jpy-krw-100-2026-09-21"
+  },
+  "recomputed_delta": -1.43,
+  "stored_last_delta": -1.43,
+  "recomputed_matches_stored_last_delta": true,
+  "problems": [],
+  "result": "PASS"
+}

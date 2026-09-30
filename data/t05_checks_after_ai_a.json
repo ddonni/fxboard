@@ -1,0 +1,67 @@
+{
+  "target_commit": "88c8e53ebc6be6de69e090e1332af4c463743baa",
+  "target_commit_time": "2026-09-22T07:23:16+00:00",
+  "baseline_commit": "75fd977",
+  "run_at_utc": "2026-09-28T01:25:17.909Z",
+  "runner": "scripts/run_t05_checks.js",
+  "node": "v22.22.2",
+  "external_requests_blocked": [],
+  "summary": {
+    "pass": 7,
+    "fail": 3,
+    "total": 10,
+    "first_failing_check": "CSV-06"
+  },
+  "results": [
+    {
+      "id": "CSV-01",
+      "status": "PASS",
+      "detail": "헤더 1줄만 반환, 예외 없음"
+    },
+    {
+      "id": "CSV-02",
+      "status": "PASS",
+      "detail": "2줄, 둘째 줄 일치"
+    },
+    {
+      "id": "CSV-03",
+      "status": "PASS",
+      "detail": "\"09:02, KST\"로 감쌈, RFC4180 파싱 시 4열 (단순 문자열 split 기준은 해석에서 제외 — T05_CARD2.md 참고)"
+    },
+    {
+      "id": "CSV-04",
+      "status": "PASS",
+      "detail": "큰따옴표 이중 처리 + 필드 감쌈: \"9시 \"\"정각\"\"\""
+    },
+    {
+      "id": "CSV-05",
+      "status": "PASS",
+      "detail": "입력 순서 09-19→09-17→09-18 그대로"
+    },
+    {
+      "id": "CSV-06",
+      "status": "FAIL",
+      "detail": "\"일별 기록\" 섹션(#history-table 포함) 안에 \"CSV 다운로드\" 버튼이 없음"
+    },
+    {
+      "id": "CSV-07",
+      "status": "FAIL",
+      "detail": "버튼이 없어 클릭할 수 없음"
+    },
+    {
+      "id": "CSV-08",
+      "status": "FAIL",
+      "detail": "버튼이 없음"
+    },
+    {
+      "id": "CSV-09",
+      "status": "PASS",
+      "detail": "기준선 대비 6개 섹션 텍스트 동일(새 버튼 제외), 스파크라인 svg 1개 유지, 콘솔 에러 0건(favicon 404 제외)"
+    },
+    {
+      "id": "CSV-10",
+      "status": "PASS",
+      "detail": "check_secrets.py exit 0, 75fd977..88c8e53 diff에 외부 script/CDN/외부 모듈 추가 0건, package.json·node_modules 없음"
+    }
+  ]
+}

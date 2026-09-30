@@ -1,0 +1,20 @@
+[환경] node v22.22.2 / Python 3.11.15 / git version 2.43.0
+[버전] HEAD=926dd15a555e5343082243bdb9d75881184a0800
+Preparing worktree (detached HEAD 75bb6e5)
+[PASS] DC-01 — 빈 배열, 예외 없음
+[PASS] DC-02 — delta null, direction null, label —
+[PASS] DC-03 — ["—","▲ +5.21","▼ -1.43"]
+[PASS] DC-04 — delta 0, flat, = 0.00
+[PASS] DC-05 — delta === 0.2, ▲ +0.20
+[PASS] DC-06 — 오름차순 새 배열, 입력 불변
+[FAIL] DC-07 — 헤더에 "전일 대비" 열 없음 (헤더: ["날짜(KST)","100엔당 KRW","출처 시각(KST)","조회 시각(KST)"])
+[FAIL] DC-08 — 열 없음, 행 1개, 칸 undefined, JS 오류 0건
+[PASS] DC-09 — 5개 섹션·표 밖 내용·기존 4개 열 동일, 콘솔 오류 0건
+[PASS] DC-10 — 비밀값 0건, 외부 script·CDN·외부 모듈 추가 0건, package.json 없음
+
+926dd15: 8/10 PASS, 첫 실패 검사: DC-07, 외부 요청 차단 0건
+기록: t05/runs.jsonl
+--- --target e44baf1 ---
+Preparing worktree (detached HEAD 75bb6e5)
+Preparing worktree (detached HEAD e44baf1)
+e44baf1: 8/10 PASS, 첫 실패 검사: DC-07, 외부 요청 차단 0건

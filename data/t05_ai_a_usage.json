@@ -1,0 +1,93 @@
+{
+  "session": "AI A (과제5 카드1 재작업, 모델: Claude Sonnet 5)",
+  "source": "세션 도구 호출 기록에서 기계적으로 집계 (대화 본문은 포함하지 않음, 호출 이름·시각·명령 첫 줄만)",
+  "window_utc": {
+    "start": "2026-09-22T07:22:00.110Z",
+    "end_commit_call": "2026-09-22T07:23:16.673Z"
+  },
+  "elapsed_seconds": 76.6,
+  "caps": {
+    "time_minutes": 20,
+    "tool_calls": 40,
+    "files": 8,
+    "commits": 1,
+    "external_network": 0
+  },
+  "usage": {
+    "tool_calls_bash_or_file": 10,
+    "tool_calls_other": 0,
+    "files_changed": 4,
+    "files_detail": [
+      "csv-export.js (신규)",
+      "scripts/test_csv_export_logic.js (신규)",
+      "T05_HANDOFF.md (신규)",
+      "T05_CARD1.md (수정)"
+    ],
+    "commits": 1,
+    "commit": "88c8e53ebc6be6de69e090e1332af4c463743baa",
+    "external_network_calls": 0,
+    "external_network_note": "10개 호출 모두 date/node/python3/git(로컬)/파일 쓰기 — 네트워크 사용 명령 없음"
+  },
+  "calls": [
+    {
+      "n": 1,
+      "at": "2026-09-22T07:22:00.110Z",
+      "tool": "Bash",
+      "command_first_line": "date -u '+%Y-%m-%dT%H:%M:%SZ'"
+    },
+    {
+      "n": 2,
+      "at": "2026-09-22T07:22:08.324Z",
+      "tool": "Write",
+      "command_first_line": "/home/claude/fx-board/csv-export.js"
+    },
+    {
+      "n": 3,
+      "at": "2026-09-22T07:22:24.618Z",
+      "tool": "Write",
+      "command_first_line": "/home/claude/fx-board/scripts/test_csv_export_logic.js"
+    },
+    {
+      "n": 4,
+      "at": "2026-09-22T07:22:26.044Z",
+      "tool": "Bash",
+      "command_first_line": "node scripts/test_csv_export_logic.js; echo \"EXIT: $?\""
+    },
+    {
+      "n": 5,
+      "at": "2026-09-22T07:22:29.309Z",
+      "tool": "Bash",
+      "command_first_line": "python3 scripts/check_secrets.py; echo \"EXIT: $?\""
+    },
+    {
+      "n": 6,
+      "at": "2026-09-22T07:23:01.451Z",
+      "tool": "Write",
+      "command_first_line": "/home/claude/fx-board/T05_HANDOFF.md"
+    },
+    {
+      "n": 7,
+      "at": "2026-09-22T07:23:03.170Z",
+      "tool": "Bash",
+      "command_first_line": "date -u '+%Y-%m-%dT%H:%M:%SZ'"
+    },
+    {
+      "n": 8,
+      "at": "2026-09-22T07:23:05.535Z",
+      "tool": "Bash",
+      "command_first_line": "git log -1 --format=%cI 75fd977"
+    },
+    {
+      "n": 9,
+      "at": "2026-09-22T07:23:10.069Z",
+      "tool": "Edit",
+      "command_first_line": "/home/claude/fx-board/T05_CARD1.md"
+    },
+    {
+      "n": 10,
+      "at": "2026-09-22T07:23:16.673Z",
+      "tool": "Bash",
+      "command_first_line": "git add csv-export.js scripts/test_csv_export_logic.js T05_HANDOFF.md T05_CARD1.md && git status --short && git commit -"
+    }
+  ]
+}
