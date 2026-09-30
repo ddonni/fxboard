@@ -1,0 +1,109 @@
+{
+  "A": {
+    "transcript_file": "agent-aeac5ba057dc4921f.jsonl",
+    "requests": 1,
+    "first_request_sha256": "db65609b182fd44ca55f0a5e45ac57c3c4f1803d1da9c5ab66f93d99423525d7",
+    "first_request_text": "작업 저장소: /home/claude/fx-board (git 저장소)\n\n이번 작업의 요청은 이 저장소의 `t05/REQUEST.md`입니다. 당신은 그 문서에서 말하는 **AI A**입니다. 문서를 읽고 AI A의 절차를 그대로 수행한 뒤 멈추세요.\n\n끝나면 짧게 보고해 주세요: 만든 커밋 두 개의 ID, 마지막 검사 결과(통과 수와 실패한 ID), 스스로 센 도구 호출 수와 시작·종료 시각.",
+    "tool_calls": 7,
+    "first_record": "2026-09-30T05:22:49.528Z",
+    "last_record": "2026-09-30T05:23:54.590Z",
+    "elapsed_seconds": 65.1,
+    "run_checks_invocations": [
+      "2026-09-30T05:23:11.843Z"
+    ],
+    "calls": [
+      {
+        "at": "2026-09-30T05:22:52.487Z",
+        "tool": "Bash",
+        "target": "date -u +%FT%T; cat /home/claude/fx-board/t05/REQUEST.md; ls -la /home/claude/fx-board /ho"
+      },
+      {
+        "at": "2026-09-30T05:22:56.320Z",
+        "tool": "Bash",
+        "target": "cd /home/claude/fx-board; cat t05/SESSION_LOG.md; echo ------; cat t05/CHECKS.md; echo ---"
+      },
+      {
+        "at": "2026-09-30T05:23:06.237Z",
+        "tool": "Write",
+        "target": "/home/claude/fx-board/daily-change.js"
+      },
+      {
+        "at": "2026-09-30T05:23:07.303Z",
+        "tool": "Bash",
+        "target": "cd /home/claude/fx-board; python3 - <<'EOF'"
+      },
+      {
+        "at": "2026-09-30T05:23:15.807Z",
+        "tool": "Bash",
+        "target": "cd /home/claude/fx-board; git add daily-change.js t05/runs.jsonl t05/SESSION_LOG.md && git"
+      },
+      {
+        "at": "2026-09-30T05:23:22.910Z",
+        "tool": "Bash",
+        "target": "cd /home/claude/fx-board; grep -n \"sparkline\\|csv-export\\|history-table\\|history-tbody\\|<s"
+      },
+      {
+        "at": "2026-09-30T05:23:46.891Z",
+        "tool": "Bash",
+        "target": "cd /home/claude/fx-board; NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ); C1=e44baf13cbd2b8ca0deac732d"
+      }
+    ],
+    "runs_source": "t05/runs.jsonl (실행기가 실행마다 자동 기록) — 세션 기록의 실제 실행 명령과 대조해 일치 확인",
+    "error_rounds": 1,
+    "final_pass": 8
+  },
+  "B": {
+    "transcript_file": "agent-a7d2eda3d8d49b79b.jsonl",
+    "requests": 1,
+    "first_request_sha256": "d45cc809b79dea5d311dd44ef578b6bd19104b58d0b377a1a11ccb825c2493fa",
+    "first_request_text": "작업 저장소: /home/claude/fx-board (git 저장소)\n인수인계 문서: 이 저장소의 `t05/HANDOFF.md`\n\n당신은 이 인수인계를 받아 작업을 이어가는 AI B입니다. 이 저장소와 인수인계 문서만으로 작업을 완성하세요.\n\n끝나면 짧게 보고해 주세요: 만든 커밋 ID, 마지막 검사 결과(통과 수와 실패한 ID), 스스로 센 도구 호출 수와 시작·종료 시각, 인수인계 문서에 빠진 내용이 있었는지.",
+    "tool_calls": 5,
+    "first_record": "2026-09-30T05:24:41.533Z",
+    "last_record": "2026-09-30T05:25:30.143Z",
+    "elapsed_seconds": 48.6,
+    "run_checks_invocations": [
+      "2026-09-30T05:25:05.561Z"
+    ],
+    "calls": [
+      {
+        "at": "2026-09-30T05:24:44.240Z",
+        "tool": "Bash",
+        "target": "date '+%Y-%m-%d %H:%M:%S'; cd /home/claude/fx-board && git status && git log --oneline | h"
+      },
+      {
+        "at": "2026-09-30T05:24:46.317Z",
+        "tool": "Bash",
+        "target": "cat t05/REQUEST.md t05/CHECKS.md t05/SESSION_LOG.md && tail -2 t05/runs.jsonl && cat daily"
+      },
+      {
+        "at": "2026-09-30T05:24:49.587Z",
+        "tool": "Bash",
+        "target": "date -u +%Y-%m-%dT%H:%M:%SZ && sha256sum t05/HANDOFF.md && sed -n 220,260p app.js && grep "
+      },
+      {
+        "at": "2026-09-30T05:25:01.551Z",
+        "tool": "Bash",
+        "target": "python3 - <<'EOF'"
+      },
+      {
+        "at": "2026-09-30T05:25:19.580Z",
+        "tool": "Bash",
+        "target": "END=$(date -u +%Y-%m-%dT%H:%M:%SZ) && python3 - \"$END\" <<'EOF'"
+      }
+    ],
+    "runs_source": "t05/runs.jsonl (실행기가 실행마다 자동 기록) — 세션 기록의 실제 실행 명령과 대조해 일치 확인",
+    "error_rounds": 0,
+    "final_pass": 10
+  },
+  "method": "서브에이전트 세션 기록(jsonl)에서 기계적으로 집계. 대화 본문은 넣지 않고 요청 원문·도구 이름·명령 첫 줄·시각만 남김.",
+  "harness_report": {
+    "A": {
+      "tool_uses": 7,
+      "duration_ms": 65171
+    },
+    "B": {
+      "tool_uses": 5,
+      "duration_ms": 48633
+    }
+  }
+}
