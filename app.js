@@ -8,7 +8,7 @@
 // 곧 "마지막 정상값"입니다(T04-C17).
 
 // TODO: GitHub에 올린 뒤 실제 저장소 주소로 바꿔주세요.
-const SOURCE_URL = "https://github.com/YOUR_USERNAME/YOUR_REPO";
+const SOURCE_URL = "https://github.com/ddonni/fxboard";
 
 const ERROR_LABEL_KO = {
   timeout: "타임아웃 (느린 외부 응답)",
